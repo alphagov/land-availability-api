@@ -39,3 +39,17 @@ class BusStop(models.Model):
     area = models.CharField(max_length=20, blank=True, null=True)
     road = models.CharField(max_length=255, blank=True, null=True)
     nptg_code = models.CharField(max_length=255, blank=True, null=True)
+
+
+class TrainStop(models.Model):
+    # Describes an instance of a train stop
+
+    atcode_code = models.CharField(db_index=True, max_length=24)
+    naptan_code = models.CharField(max_length=24, blank=True, null=True)
+    point = models.PointField()
+    name = models.CharField(max_length=255, blank=True, null=True)
+    main_road = models.CharField(max_length=255, blank=True, null=True)
+    side_road = models.CharField(max_length=255, blank=True, null=True)
+    type = models.CharField(max_length=24, blank=True, null=True)
+    nptg_code = models.CharField(max_length=255, blank=True, null=True)
+    local_reference = models.CharField(max_length=255, blank=True, null=True)
