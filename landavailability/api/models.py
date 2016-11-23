@@ -27,3 +27,15 @@ class CodePoint(models.Model):
     county = models.CharField(db_index=True, max_length=24)
     district = models.CharField(db_index=True, max_length=24)
     ward = models.CharField(db_index=True, max_length=24)
+
+
+class BusStop(models.Model):
+    # Describes an instance of a bus stop
+
+    amic_code = models.CharField(db_index=True, max_length=20)
+    point = models.PointField()
+    name = models.CharField(max_length=255, blank=True, null=True)
+    direction = models.CharField(max_length=255, blank=True, null=True)
+    area = models.CharField(max_length=20, blank=True, null=True)
+    road = models.CharField(max_length=255, blank=True, null=True)
+    nptg_code = models.CharField(max_length=255, blank=True, null=True)
