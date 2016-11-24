@@ -9,7 +9,10 @@ from api.management.commands.import_busstops import (
 from api.management.commands.import_codepoints import (
     Command as CodePointCommand,
 )
-from api.models import Address, BusStop, CodePoint
+from api.management.commands.import_trains import (
+    Command as TrainStopCommand,
+)
+from api.models import Address, BusStop, CodePoint, TrainStop
 from django.contrib.gis.geos import Point
 
 
@@ -87,3 +90,24 @@ class TestCodePointCommand(TestCase):
         self.assertEqual(codepoint.county, '')
         self.assertEqual(codepoint.district, 'E08000002')
         self.assertEqual(codepoint.ward, 'E05000681')
+
+
+class TestTrainStopCommand(TestCase):
+    @pytest.mark.django_db
+    def test_import_train_stop_process_row(self):
+        train_stop_row = [
+            '9100ALTRNHM', '', '377008', '387924', 'DATALAND INTERCHANGE',
+            'DATALAND NEW RD', 'DATA LANE', 'R', 'E0028261', 'AA123ZZ']
+
+        TrainStopCommand().process_row(train_stop_row)
+        self.assertEqual(TrainStop.objects.count(), 1)
+
+        train_stop = TrainStop.objects.first()
+        self.assertEqual(train_stop.atcode_code, '9100ALTRNHM')
+        self.assertEqual(train_stop.naptan_code, '')
+        self.assertEqual(train_stop.name, 'DATALAND INTERCHANGE')
+        self.assertEqual(train_stop.main_road, 'DATALAND NEW RD')
+        self.assertEqual(train_stop.side_road, 'DATA LANE')
+        self.assertEqual(train_stop.type, 'R')
+        self.assertEqual(train_stop.nptg_code, 'E0028261')
+        self.assertEqual(train_stop.local_reference, 'AA123ZZ')
