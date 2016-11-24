@@ -1,5 +1,5 @@
 from unittest import TestCase
-from landavailability.api.management.commands.import_addresses.py import (
+from api.management.commands.import_addresses import (
     Command as AddressesCommand
 )
 
