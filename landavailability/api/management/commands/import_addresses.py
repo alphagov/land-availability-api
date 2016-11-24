@@ -20,7 +20,7 @@ class Command(CSVImportCommand):
         address.address_line_3 = row[4]
         address.city = row[5]
         address.county = row[6]
-        address.postcode = row[7]
+        address.postcode = row[7].strip().replace(' ', '').upper()
         address.country_code = row[8]
         address.point = Point(float(row[10]), float(row[9]))
 
