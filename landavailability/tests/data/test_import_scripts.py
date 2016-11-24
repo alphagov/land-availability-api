@@ -6,7 +6,10 @@ from api.management.commands.import_addresses import (
 from api.management.commands.import_busstops import (
     Command as BusStopCommand,
 )
-from api.models import Address, BusStop
+from api.management.commands.import_codepoints import (
+    Command as CodePointCommand,
+)
+from api.models import Address, BusStop, CodePoint
 from django.contrib.gis.geos import Point
 
 
@@ -63,3 +66,24 @@ class TestBusStopCommand(TestCase):
         self.assertEqual(bus_stop.area, 'NA')
         self.assertEqual(bus_stop.road, 'HONOLULU NEW RD')
         self.assertEqual(bus_stop.nptg_code, 'A00223344')
+
+
+class TestCodePointCommand(TestCase):
+    @pytest.mark.django_db
+    def test_import_codepoint_process_row(self):
+        codepoint_row = [
+            "BL0 0AA", "10", "379448", "416851", "E92000001", "E19000001",
+            "E18000002", "", "E08000002", "E05000681"]
+
+        CodePointCommand().process_row(codepoint_row)
+        self.assertEqual(CodePoint.objects.count(), 1)
+
+        codepoint = CodePoint.objects.first()
+        self.assertEqual(codepoint.postcode, 'BL00AA')
+        self.assertEqual(codepoint.quality, 10)
+        self.assertEqual(codepoint.country, 'E92000001')
+        self.assertEqual(codepoint.nhs_region, 'E19000001')
+        self.assertEqual(codepoint.nhs_health_authority, 'E18000002')
+        self.assertEqual(codepoint.county, '')
+        self.assertEqual(codepoint.district, 'E08000002')
+        self.assertEqual(codepoint.ward, 'E05000681')
