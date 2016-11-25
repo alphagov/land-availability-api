@@ -1,6 +1,10 @@
 # land-avilability-api
 API backend for Land Availability tool
 
+# Continuous integration status
+
+[![Travis-CI Status](https://secure.travis-ci.org/alphagov/land-availability-api.png?branch=master)](http://travis-ci.org/#!/alphagov/land-availability-api)
+
 # PostgreSQL Setup
 
 Make sure you have **PostgreSQL** (tested with 9.6) installed along with PostGIS
