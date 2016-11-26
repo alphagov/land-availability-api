@@ -1,0 +1,18 @@
+language: python
+python:
+  - '3.5'
+install: pip install -r requirements.txt
+services:
+  - postgresql
+before_script:
+  - psql -c 'create database landavailability_test;' -U postgres
+  - psql -U postgres -c "create extension postgis"
+  - cd landavailability
+env:
+  global:
+  - LANDAVAILABILITY_DB_NAME="landavailability_test"
+  - LANDAVAILABILITY_DB_USER="postgres"
+  - LANDAVAILABILITY_DB_PASSWORD=""
+  - LANDAVAILABILITY_DB_HOST=localhost
+  - LANDAVAILABILITY_DB_PORT=5432
+script: pytest -v

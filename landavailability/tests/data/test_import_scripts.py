@@ -59,11 +59,6 @@ class TestBusStopCommand(TestCase):
 
         bus_stop = BusStop.objects.first()
         self.assertEqual(bus_stop.amic_code, '1800AMIC001')
-        self.assertEqual(
-            bus_stop.point,
-            Point(
-                float("-2.347743000012108"),
-                float("53.38737090322739")))
         self.assertEqual(bus_stop.name, 'Honolulu Interchange')
         self.assertEqual(bus_stop.direction, 'Nr Train Station')
         self.assertEqual(bus_stop.area, 'NA')
