@@ -53,3 +53,15 @@ class TrainStop(models.Model):
     type = models.CharField(max_length=24, blank=True, null=True)
     nptg_code = models.CharField(max_length=255, blank=True, null=True)
     local_reference = models.CharField(max_length=255, blank=True, null=True)
+
+
+class Location(models.Model):
+    # Describes an instance of a Location
+
+    name = models.CharField(db_index=True, max_length=255)
+    point = models.PointField()
+    geom = models.MultiPolygonField()
+    authority = models.CharField(max_length=255, blank=True, null=True)
+    owner = models.CharField(max_length=255, blank=True, null=True)
+    uprn = models.CharField(max_length=100, blank=True, null=True)
+    unique_asset_id = models.CharField(max_length=100, blank=True, null=True)
