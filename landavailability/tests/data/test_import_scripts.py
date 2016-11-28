@@ -12,8 +12,12 @@ from api.management.commands.import_codepoints import (
 from api.management.commands.import_trains import (
     Command as TrainStopCommand,
 )
-from api.models import Address, BusStop, CodePoint, TrainStop
+from api.management.commands.import_manchester_lands import (
+    Command as ManchesterLandsCommand,
+)
+from api.models import Address, BusStop, CodePoint, TrainStop, Location
 from django.contrib.gis.geos import Point
+import json
 
 
 class TestAddressCommand(TestCase):
@@ -106,3 +110,51 @@ class TestTrainStopCommand(TestCase):
         self.assertEqual(train_stop.type, 'R')
         self.assertEqual(train_stop.nptg_code, 'E0028261')
         self.assertEqual(train_stop.local_reference, 'AA123ZZ')
+
+
+class TestManchesterLandCommand(TestCase):
+    @pytest.mark.django_db
+    def test_import_manchester_lands_process_feature(self):
+        feature_json = """
+            {
+                "type": "Feature",
+                "geometry_name": "wkb_geometry",
+                "id": "v_gm_land_and_building_assets.fid-4118d472_152ea355a4",
+                "properties": {
+                    "unique_asset_id": "10910",
+                    "holding_type": "Land and buildings",
+                    "geom_type": "MULTIPOLYGON",
+                    "tenure_detail": null,
+                    "la": "Bolton",
+                    "address": "St James C E Secondary School (10910)",
+                    "temp_fid": "bol-2",
+                    "tenure_type": "Leasehold ",
+                    "other_detail": null
+                },
+                "geometry": {
+                    "coordinates": [
+                    [
+                        [
+                            [100.0, 0.0],
+                            [101.0, 0.0],
+                            [101.0, 1.0],
+                            [100.0, 1.0],
+                            [100.0, 0.0]
+                        ]
+                    ],
+                    [
+                        [
+                            [100.0, 0.0],
+                            [101.0, 0.0],
+                            [101.0, 1.0],
+                            [100.0, 1.0],
+                            [100.0, 0.0]
+                        ]
+                    ]
+                    ],
+                    "type": "MultiPolygon"
+                }
+        }"""
+
+        ManchesterLandsCommand().process_feature(json.loads(feature_json))
+        self.assertEqual(Location.objects.count(), 1)
