@@ -66,4 +66,6 @@ class Location(models.Model):
     uprn = models.CharField(max_length=100, blank=True, null=True)
     unique_asset_id = models.CharField(max_length=100, blank=True, null=True)
     nearest_busstop = models.ForeignKey(BusStop, null=True)
+    nearest_busstop_distance = models.FloatField(null=True)  # meters
     nearest_trainstop = models.ForeignKey(TrainStop, null=True)
+    nearest_trainstop_distance = models.FloatField(null=True)  # meters
