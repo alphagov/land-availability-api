@@ -29,8 +29,7 @@ class Command(BaseCommand):
 
             try:
                 location = Location.objects.get(
-                    name=feature['properties']['address'],
-                    geom=multi_polygon)
+                    name=feature['properties']['address'])
             except Location.DoesNotExist:
                 location = Location()
                 location.name = feature['properties']['address']

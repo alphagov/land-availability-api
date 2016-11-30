@@ -12,7 +12,7 @@ class Address(models.Model):
     county = models.CharField(max_length=255, blank=True, null=True)
     postcode = models.CharField(max_length=50, blank=True, null=True)
     country_code = models.CharField(max_length=50, blank=True, null=True)
-    point = models.PointField()
+    point = models.PointField(geography=True, spatial_index=True)
 
 
 class CodePoint(models.Model):
@@ -20,7 +20,7 @@ class CodePoint(models.Model):
 
     postcode = models.CharField(db_index=True, max_length=20)
     quality = models.IntegerField()
-    point = models.PointField()
+    point = models.PointField(geography=True, spatial_index=True)
     country = models.CharField(db_index=True, max_length=24)
     nhs_region = models.CharField(db_index=True, max_length=24)
     nhs_health_authority = models.CharField(db_index=True, max_length=24)
@@ -33,7 +33,7 @@ class BusStop(models.Model):
     # Describes an instance of a bus stop
 
     amic_code = models.CharField(db_index=True, max_length=20)
-    point = models.PointField()
+    point = models.PointField(geography=True, spatial_index=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     direction = models.CharField(max_length=255, blank=True, null=True)
     area = models.CharField(max_length=20, blank=True, null=True)
@@ -46,7 +46,7 @@ class TrainStop(models.Model):
 
     atcode_code = models.CharField(db_index=True, max_length=24)
     naptan_code = models.CharField(max_length=24, blank=True, null=True)
-    point = models.PointField()
+    point = models.PointField(geography=True, spatial_index=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     main_road = models.CharField(max_length=255, blank=True, null=True)
     side_road = models.CharField(max_length=255, blank=True, null=True)
@@ -59,8 +59,8 @@ class Location(models.Model):
     # Describes an instance of a Location
 
     name = models.CharField(db_index=True, max_length=255)
-    point = models.PointField()
-    geom = models.MultiPolygonField()
+    point = models.PointField(geography=True, spatial_index=True)
+    geom = models.MultiPolygonField(geography=True, spatial_index=True)
     authority = models.CharField(max_length=255, blank=True, null=True)
     owner = models.CharField(max_length=255, blank=True, null=True)
     uprn = models.CharField(max_length=100, blank=True, null=True)
