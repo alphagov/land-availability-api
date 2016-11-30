@@ -65,3 +65,5 @@ class Location(models.Model):
     owner = models.CharField(max_length=255, blank=True, null=True)
     uprn = models.CharField(max_length=100, blank=True, null=True)
     unique_asset_id = models.CharField(max_length=100, blank=True, null=True)
+    nearest_busstop = models.ForeignKey(BusStop, null=True)
+    nearest_trainstop = models.ForeignKey(TrainStop, null=True)
