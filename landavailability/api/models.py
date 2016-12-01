@@ -1,4 +1,6 @@
 from django.contrib.gis.db import models
+from django.contrib.gis.db.models.functions import Distance
+from django.contrib.gis.measure import D
 
 
 class Address(models.Model):
@@ -39,6 +41,23 @@ class BusStop(models.Model):
     area = models.CharField(max_length=20, blank=True, null=True)
     road = models.CharField(max_length=255, blank=True, null=True)
     nptg_code = models.CharField(max_length=255, blank=True, null=True)
+
+    def update_close_locations(self, distance=1000):
+        locations = Location.objects.filter(
+            geom__dwithin=(self.point, D(m=distance)))
+
+        for location in locations:
+            distance = location.geom.distance(self.point)
+
+            if location.nearest_busstop:
+                if distance > location.geom.distance(
+                        location.nearest_busstop.point):
+                    continue
+
+            location.nearest_busstop = self
+            # FIXME: distance is espressed in a linear way
+            # location.nearest_busstop_distance = distance
+            location.save()
 
 
 class TrainStop(models.Model):
