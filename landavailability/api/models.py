@@ -88,3 +88,12 @@ class Location(models.Model):
     nearest_busstop_distance = models.FloatField(null=True)  # meters
     nearest_trainstop = models.ForeignKey(TrainStop, null=True)
     nearest_trainstop_distance = models.FloatField(null=True)  # meters
+
+    def refresh_busstop_distance(self):
+        if self.nearest_busstop:
+            distance = Location.objects.filter(id=self.id).\
+                annotate(
+                    distance=Distance('geom', self.nearest_busstop.point))[0].\
+                distance.m
+            self.nearest_busstop_distance = distance
+            self.save()
