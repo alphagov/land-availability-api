@@ -55,9 +55,8 @@ class BusStop(models.Model):
                     continue
 
             location.nearest_busstop = self
-            # FIXME: distance is espressed in a linear way
-            # location.nearest_busstop_distance = distance
             location.save()
+            location.refresh_busstop_distance()
 
 
 class TrainStop(models.Model):
@@ -84,9 +83,11 @@ class Location(models.Model):
     owner = models.CharField(max_length=255, blank=True, null=True)
     uprn = models.CharField(max_length=100, blank=True, null=True)
     unique_asset_id = models.CharField(max_length=100, blank=True, null=True)
-    nearest_busstop = models.ForeignKey(BusStop, null=True)
+    nearest_busstop = models.ForeignKey(
+        BusStop, on_delete=models.SET_NULL, null=True)
     nearest_busstop_distance = models.FloatField(null=True)  # meters
-    nearest_trainstop = models.ForeignKey(TrainStop, null=True)
+    nearest_trainstop = models.ForeignKey(
+        TrainStop, on_delete=models.SET_NULL, null=True)
     nearest_trainstop_distance = models.FloatField(null=True)  # meters
 
     def refresh_busstop_distance(self):
@@ -97,3 +98,18 @@ class Location(models.Model):
                 distance.m
             self.nearest_busstop_distance = distance
             self.save()
+
+    def update_nearest_busstop(self, distance=1000):
+        bss = BusStop.objects.filter(
+            point__dwithin=(self.geom, D(m=distance))).annotate(
+            distance=Distance('point', self.geom)).order_by('distance')
+
+        if len(bss) > 0:
+            self.nearest_busstop = bss[0]
+            self.nearest_busstop_distance = bss[0].distance.m
+
+    def save(self, *args, **kwargs):
+        if self.pk is None:
+            self.update_nearest_busstop()
+
+        super(Location, self).save(*args, **kwargs)
