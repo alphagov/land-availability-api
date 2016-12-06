@@ -24,5 +24,6 @@ class Command(CSVImportCommand):
 
         try:
             bus_stop.save()
+            bus_stop.update_close_locations()
         except Exception as e:
             print('Could not add: {0}'.format(row))
