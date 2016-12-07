@@ -29,5 +29,6 @@ class Command(CSVImportCommand):
 
         try:
             train_stop.save()
+            train_stop.update_close_locations()
         except Exception as e:
-            print('Could not add: {0}'.format(row))
+            print('Could not add: {0} because {1}'.format(row, e))
