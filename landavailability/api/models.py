@@ -1,6 +1,8 @@
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 
 
 class Address(models.Model):
@@ -57,6 +59,16 @@ class BusStop(models.Model):
             location.nearest_busstop = self
             location.save()
             location.refresh_busstop_distance()
+
+
+@receiver(pre_delete, sender=BusStop, weak=False)
+def busstop_predelete_handler(sender, instance, **kwargs):
+    """
+    Whenever we try to delete a BusStop, we search all the Locations using it
+    and we remove the reference, so the object can be safely deleted.
+    """
+    Location.objects.filter(nearest_busstop__id=instance.id).\
+        update(nearest_busstop=None, nearest_busstop_distance=0)
 
 
 class TrainStop(models.Model):
