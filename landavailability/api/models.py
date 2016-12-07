@@ -44,21 +44,19 @@ class BusStop(models.Model):
     road = models.CharField(max_length=255, blank=True, null=True)
     nptg_code = models.CharField(max_length=255, blank=True, null=True)
 
-    def update_close_locations(self, distance=1000):
+    def update_close_locations(self, default_range=1000):
         locations = Location.objects.filter(
-            geom__dwithin=(self.point, D(m=distance)))
+            geom__dwithin=(self.point, D(m=default_range))).\
+            annotate(distance=Distance('geom', self.point))
 
         for location in locations:
-            distance = location.geom.distance(self.point)
-
             if location.nearest_busstop:
-                if distance > location.geom.distance(
-                        location.nearest_busstop.point):
+                if location.distance.m > location.nearest_busstop_distance:
                     continue
 
             location.nearest_busstop = self
+            location.nearest_busstop_distance = location.distance.m
             location.save()
-            location.refresh_busstop_distance()
 
 
 @receiver(pre_delete, sender=BusStop, weak=False)
@@ -84,6 +82,30 @@ class TrainStop(models.Model):
     nptg_code = models.CharField(max_length=255, blank=True, null=True)
     local_reference = models.CharField(max_length=255, blank=True, null=True)
 
+    def update_close_locations(self, default_range=1000):
+        locations = Location.objects.filter(
+            geom__dwithin=(self.point, D(m=default_range))).\
+            annotate(distance=Distance('geom', self.point))
+
+        for location in locations:
+            if location.nearest_trainstop:
+                if location.distance.m > location.nearest_trainstop_distance:
+                    continue
+
+            location.nearest_trainstop = self
+            location.nearest_trainstop_distance = location.distance.m
+            location.save()
+
+
+@receiver(pre_delete, sender=TrainStop, weak=False)
+def trainstop_predelete_handler(sender, instance, **kwargs):
+    """
+    Whenever we try to delete a TrainStop, we search all the Locations using it
+    and we remove the reference, so the object can be safely deleted.
+    """
+    Location.objects.filter(nearest_trainstop__id=instance.id).\
+        update(nearest_trainstop=None, nearest_trainstop_distance=0)
+
 
 class Location(models.Model):
     # Describes an instance of a Location
@@ -102,15 +124,6 @@ class Location(models.Model):
         TrainStop, on_delete=models.SET_NULL, null=True)
     nearest_trainstop_distance = models.FloatField(null=True)  # meters
 
-    def refresh_busstop_distance(self):
-        if self.nearest_busstop:
-            distance = Location.objects.filter(id=self.id).\
-                annotate(
-                    distance=Distance('geom', self.nearest_busstop.point))[0].\
-                distance.m
-            self.nearest_busstop_distance = distance
-            self.save()
-
     def update_nearest_busstop(self, distance=1000):
         bss = BusStop.objects.filter(
             point__dwithin=(self.geom, D(m=distance))).annotate(
@@ -120,8 +133,18 @@ class Location(models.Model):
             self.nearest_busstop = bss[0]
             self.nearest_busstop_distance = bss[0].distance.m
 
+    def update_nearest_trainstop(self, distance=1000):
+        tss = TrainStop.objects.filter(
+            point__dwithin=(self.geom, D(m=distance))).annotate(
+            distance=Distance('point', self.geom)).order_by('distance')
+
+        if len(tss) > 0:
+            self.nearest_trainstop = tss[0]
+            self.nearest_trainstop_distance = tss[0].distance.m
+
     def save(self, *args, **kwargs):
         if self.pk is None:
             self.update_nearest_busstop()
+            self.update_nearest_trainstop()
 
         super(Location, self).save(*args, **kwargs)
