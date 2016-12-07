@@ -97,6 +97,16 @@ class TrainStop(models.Model):
             location.save()
 
 
+@receiver(pre_delete, sender=TrainStop, weak=False)
+def trainstop_predelete_handler(sender, instance, **kwargs):
+    """
+    Whenever we try to delete a TrainStop, we search all the Locations using it
+    and we remove the reference, so the object can be safely deleted.
+    """
+    Location.objects.filter(nearest_trainstop__id=instance.id).\
+        update(nearest_trainstop=None, nearest_trainstop_distance=0)
+
+
 class Location(models.Model):
     # Describes an instance of a Location
 
