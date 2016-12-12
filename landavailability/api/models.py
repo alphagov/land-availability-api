@@ -107,6 +107,43 @@ def trainstop_predelete_handler(sender, instance, **kwargs):
         update(nearest_trainstop=None, nearest_trainstop_distance=0)
 
 
+class Substation(models.Model):
+    # Describe an instance of a Substation
+
+    name = models.CharField(db_index=True, max_length=255)
+    operating = models.CharField(max_length=255, blank=True, null=True)
+    action_dtt = models.CharField(max_length=255, blank=True, null=True)
+    status = models.CharField(max_length=255, blank=True, null=True)
+    description = models.CharField(max_length=255, blank=True, null=True)
+    owner_flag = models.CharField(max_length=255, blank=True, null=True)
+    gdo_gid = models.CharField(max_length=255, blank=True, null=True)
+    geom = models.PolygonField(geography=True, spatial_index=True)
+
+    def update_close_locations(self, default_range=1000):
+        locations = Location.objects.filter(
+            geom__dwithin=(self.geom, D(m=default_range))).\
+            annotate(distance=Distance('geom', self.geom))
+
+        for location in locations:
+            if location.nearest_substation:
+                if location.distance.m > location.nearest_substation_distance:
+                    continue
+
+            location.nearest_substation = self
+            location.nearest_substation_distance = location.distance.m
+            location.save()
+
+
+@receiver(pre_delete, sender=Substation, weak=False)
+def substation_predelete_handler(sender, instance, **kwargs):
+    """
+    Whenever we try to delete a Substation, we search all the Locations using it
+    and we remove the reference, so the object can be safely deleted.
+    """
+    Location.objects.filter(nearest_substation__id=instance.id).\
+        update(nearest_substation=None, nearest_substation_distance=0)
+
+
 class Location(models.Model):
     # Describes an instance of a Location
 
@@ -123,6 +160,9 @@ class Location(models.Model):
     nearest_trainstop = models.ForeignKey(
         TrainStop, on_delete=models.SET_NULL, null=True)
     nearest_trainstop_distance = models.FloatField(null=True)  # meters
+    nearest_substation = models.ForeignKey(
+        Substation, on_delete=models.SET_NULL, null=True)
+    nearest_substation_distance = models.FloatField(null=True)  # meters
 
     def update_nearest_busstop(self, distance=1000):
         bss = BusStop.objects.filter(
@@ -142,9 +182,19 @@ class Location(models.Model):
             self.nearest_trainstop = tss[0]
             self.nearest_trainstop_distance = tss[0].distance.m
 
+    def update_nearest_substation(self, distance=1000):
+        sss = Substation.objects.filter(
+            geom__dwithin=(self.geom, D(m=distance))).annotate(
+            distance=Distance('geom', self.geom)).order_by('distance')
+
+        if len(sss) > 0:
+            self.nearest_substation = sss[0]
+            self.nearest_substation_distance = sss[0].distance.m
+
     def save(self, *args, **kwargs):
         if self.pk is None:
             self.update_nearest_busstop()
             self.update_nearest_trainstop()
+            self.update_nearest_substation()
 
         super(Location, self).save(*args, **kwargs)

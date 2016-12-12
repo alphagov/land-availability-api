@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 import csv
+import shapefile
 
 
 class CSVImportCommand(BaseCommand):
@@ -26,3 +27,23 @@ class CSVImportCommand(BaseCommand):
 
                 for row in reader:
                     self.process_row(row)
+
+
+class ShapefileImportCommand(BaseCommand):
+    help = 'Import data from a *.shp file'
+
+    def add_arguments(self, parser):
+        parser.add_argument('shp_file', type=str)
+
+    def process_record(self, record):
+        pass
+
+    def handle(self, *args, **options):
+        shp_file_name = options.get('shp_file')
+
+        if shp_file_name:
+            reader = shapefile.Reader(shp_file_name)
+            for record in reader.shapeRecords():
+                if record.shape.shapeType == shapefile.NULL:
+                    continue 
+                self.process_record(record)

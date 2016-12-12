@@ -3,7 +3,7 @@ import pytest
 import json
 from django.contrib.gis.geos import Point
 from django.contrib.gis.geos import GEOSGeometry
-from api.models import BusStop, Location, TrainStop
+from api.models import BusStop, Location, TrainStop, Substation
 
 
 class TestBusStopModel(TestCase):
@@ -303,6 +303,149 @@ class TestLocationModel(TestCase):
         self.assertIsNotNone(saved_location.nearest_trainstop)
         self.assertTrue(saved_location.nearest_trainstop_distance > 0)
 
+    @pytest.mark.django_db
+    def test_substation_pre_delete_signal(self):
+        substation = Substation()
+        substation.name = 'Test Substation'
+        substation_geometry = """
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [-2.169156312672857, 53.52891295465354],
+                        [-2.1687144237941136, 53.52894144385621],
+                        [-2.168797075718808, 53.529429845087705],
+                        [-2.1686500332151675, 53.52944038951054],
+                        [-2.1684401411007515, 53.52938945208653],
+                        [-2.168404664180413, 53.5291931061935],
+                        [-2.166117490672716, 53.52933158537432],
+                        [-2.1657496762207225, 53.52920850645722],
+                        [-2.1653364214890005, 53.529231100974236],
+                        [-2.165305463631339, 53.529029354883946],
+                        [-2.1653879841876353, 53.52891418943044],
+                        [-2.1652921698108583, 53.52832828019789],
+                        [-2.1690248562994463, 53.52810283893536],
+                        [-2.169156312672857, 53.52891295465354]
+                    ]
+                ]
+            }
+        """
+        substation.geom = GEOSGeometry(substation_geometry, srid=4326)
+        substation.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [-2.157510776982608, 53.53674337389424],
+                            [-2.1576731902784423, 53.53659844690615],
+                            [-2.1577100338295208, 53.53656559076049],
+                            [-2.1578566632695027, 53.536436863459144],
+                            [-2.1577244610203583, 53.53638805160591],
+                            [-2.1576149192450824, 53.536346849754615],
+                            [-2.157513689675809, 53.53630923221811],
+                            [-2.1574079353831115, 53.53627207010766],
+                            [-2.157305202133001, 53.536235802644896],
+                            [-2.157215308950556, 53.5362035628668],
+                            [-2.1568762394878354, 53.53651815210801],
+                            [-2.1569865252411087, 53.5365566571204],
+                            [-2.1570915272990887, 53.53659427013797],
+                            [-2.1571935067042554, 53.53663053877505],
+                            [-2.1572969967274553, 53.536667254633834],
+                            [-2.1574042623558207, 53.536704864394146],
+                            [-2.157510776982608, 53.53674337389424]
+                        ]
+                    ]
+                ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        substation.update_close_locations(default_range=3000)
+        changed_location = Location.objects.first()
+        self.assertIsNotNone(changed_location.nearest_substation)
+
+        substation.delete()
+
+        changed_location = Location.objects.first()
+        self.assertIsNone(changed_location.nearest_substation)
+        self.assertEqual(changed_location.nearest_substation_distance, 0)
+
+    @pytest.mark.django_db
+    def test_update_nearest_substation_on_new_location(self):
+        substation = Substation()
+        substation.name = 'Test Substation'
+        substation_geometry = """
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [-2.169156312672857, 53.52891295465354],
+                        [-2.1687144237941136, 53.52894144385621],
+                        [-2.168797075718808, 53.529429845087705],
+                        [-2.1686500332151675, 53.52944038951054],
+                        [-2.1684401411007515, 53.52938945208653],
+                        [-2.168404664180413, 53.5291931061935],
+                        [-2.166117490672716, 53.52933158537432],
+                        [-2.1657496762207225, 53.52920850645722],
+                        [-2.1653364214890005, 53.529231100974236],
+                        [-2.165305463631339, 53.529029354883946],
+                        [-2.1653879841876353, 53.52891418943044],
+                        [-2.1652921698108583, 53.52832828019789],
+                        [-2.1690248562994463, 53.52810283893536],
+                        [-2.169156312672857, 53.52891295465354]
+                    ]
+                ]
+            }
+        """
+        substation.geom = GEOSGeometry(substation_geometry, srid=4326)
+        substation.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [-2.157510776982608, 53.53674337389424],
+                            [-2.1576731902784423, 53.53659844690615],
+                            [-2.1577100338295208, 53.53656559076049],
+                            [-2.1578566632695027, 53.536436863459144],
+                            [-2.1577244610203583, 53.53638805160591],
+                            [-2.1576149192450824, 53.536346849754615],
+                            [-2.157513689675809, 53.53630923221811],
+                            [-2.1574079353831115, 53.53627207010766],
+                            [-2.157305202133001, 53.536235802644896],
+                            [-2.157215308950556, 53.5362035628668],
+                            [-2.1568762394878354, 53.53651815210801],
+                            [-2.1569865252411087, 53.5365566571204],
+                            [-2.1570915272990887, 53.53659427013797],
+                            [-2.1571935067042554, 53.53663053877505],
+                            [-2.1572969967274553, 53.536667254633834],
+                            [-2.1574042623558207, 53.536704864394146],
+                            [-2.157510776982608, 53.53674337389424]
+                        ]
+                    ]
+                ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        saved_location = Location.objects.first()
+
+        self.assertIsNotNone(saved_location.nearest_substation)
+        self.assertTrue(saved_location.nearest_substation_distance > 0)
+
 
 class TestTrainStopModel(TestCase):
     @pytest.mark.django_db
@@ -354,3 +497,77 @@ class TestTrainStopModel(TestCase):
             updated_location.nearest_trainstop.name,
             'Test TrainStop')
         self.assertIsNotNone(updated_location.nearest_trainstop_distance)
+
+
+class TestSubstationModel(TestCase):
+    @pytest.mark.django_db
+    def test_update_location_no_substation(self):
+        substation = Substation()
+        substation.name = 'Test Substation'
+        substation_geometry = """
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [-2.169156312672857, 53.52891295465354],
+                        [-2.1687144237941136, 53.52894144385621],
+                        [-2.168797075718808, 53.529429845087705],
+                        [-2.1686500332151675, 53.52944038951054],
+                        [-2.1684401411007515, 53.52938945208653],
+                        [-2.168404664180413, 53.5291931061935],
+                        [-2.166117490672716, 53.52933158537432],
+                        [-2.1657496762207225, 53.52920850645722],
+                        [-2.1653364214890005, 53.529231100974236],
+                        [-2.165305463631339, 53.529029354883946],
+                        [-2.1653879841876353, 53.52891418943044],
+                        [-2.1652921698108583, 53.52832828019789],
+                        [-2.1690248562994463, 53.52810283893536],
+                        [-2.169156312672857, 53.52891295465354]
+                    ]
+                ]
+            }
+        """
+        substation.geom = GEOSGeometry(substation_geometry, srid=4326)
+        substation.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [-2.157510776982608, 53.53674337389424],
+                            [-2.1576731902784423, 53.53659844690615],
+                            [-2.1577100338295208, 53.53656559076049],
+                            [-2.1578566632695027, 53.536436863459144],
+                            [-2.1577244610203583, 53.53638805160591],
+                            [-2.1576149192450824, 53.536346849754615],
+                            [-2.157513689675809, 53.53630923221811],
+                            [-2.1574079353831115, 53.53627207010766],
+                            [-2.157305202133001, 53.536235802644896],
+                            [-2.157215308950556, 53.5362035628668],
+                            [-2.1568762394878354, 53.53651815210801],
+                            [-2.1569865252411087, 53.5365566571204],
+                            [-2.1570915272990887, 53.53659427013797],
+                            [-2.1571935067042554, 53.53663053877505],
+                            [-2.1572969967274553, 53.536667254633834],
+                            [-2.1574042623558207, 53.536704864394146],
+                            [-2.157510776982608, 53.53674337389424]
+                        ]
+                    ]
+                ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        substation.update_close_locations(default_range=3000)
+
+        updated_location = Location.objects.first()
+        self.assertEqual(
+            updated_location.nearest_substation.name,
+            'Test Substation')
+        self.assertIsNotNone(updated_location.nearest_substation_distance)
