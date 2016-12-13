@@ -137,11 +137,53 @@ class Substation(models.Model):
 @receiver(pre_delete, sender=Substation, weak=False)
 def substation_predelete_handler(sender, instance, **kwargs):
     """
-    Whenever we try to delete a Substation, we search all the Locations using it
-    and we remove the reference, so the object can be safely deleted.
+    Whenever we try to delete a Substation, we search all the Locations using
+    it and we remove the reference, so the object can be safely deleted.
     """
     Location.objects.filter(nearest_substation__id=instance.id).\
         update(nearest_substation=None, nearest_substation_distance=0)
+
+
+class OverheadLine(models.Model):
+    # Describe an instance of Overhead Line
+
+    gdo_gid = models.CharField(db_index=True, max_length=255)
+    route_asset = models.CharField(max_length=255, blank=True, null=True)
+    towers = models.CharField(max_length=255, blank=True, null=True)
+    action_dtt = models.CharField(max_length=255, blank=True, null=True)
+    status = models.CharField(max_length=255, blank=True, null=True)
+    operating = models.CharField(max_length=255, blank=True, null=True)
+    circuit_1 = models.CharField(max_length=255, blank=True, null=True)
+    circuit_2 = models.CharField(max_length=255, blank=True, null=True)
+    geom = models.MultiLineStringField(geography=True, spatial_index=True)
+
+    # I need to comment this out for now because calculating the distance
+    # between a line and the nearest locations is taking ages (probably
+    # because a line could go from a side of the UK to another)
+
+    # def update_close_locations(self, default_range=1000):
+    #     locations = Location.objects.filter(
+    #         geom__dwithin=(self.geom, D(m=default_range))).\
+    #         annotate(distance=Distance('geom', self.geom))
+
+    #     for location in locations:
+    #         if location.nearest_ohl:
+    #             if location.distance.m > location.nearest_ohl_distance:
+    #                 continue
+
+    #         location.nearest_ohl = self
+    #         location.nearest_ohl_distance = location.distance.m
+    #         location.save()
+
+
+@receiver(pre_delete, sender=OverheadLine, weak=False)
+def overheadline_predelete_handler(sender, instance, **kwargs):
+    """
+    Whenever we try to delete an Overhead Line, we search all the Locations
+    using it and we remove the reference, so the object can be safely deleted.
+    """
+    Location.objects.filter(nearest_ohl__id=instance.id).\
+        update(nearest_ohl=None, nearest_ohl_distance=0)
 
 
 class Location(models.Model):
@@ -163,6 +205,9 @@ class Location(models.Model):
     nearest_substation = models.ForeignKey(
         Substation, on_delete=models.SET_NULL, null=True)
     nearest_substation_distance = models.FloatField(null=True)  # meters
+    nearest_ohl = models.ForeignKey(
+        OverheadLine, on_delete=models.SET_NULL, null=True)
+    nearest_ohl_distance = models.FloatField(null=True)  # meters
 
     def update_nearest_busstop(self, distance=1000):
         bss = BusStop.objects.filter(

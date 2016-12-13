@@ -3,7 +3,7 @@ import pytest
 import json
 from django.contrib.gis.geos import Point
 from django.contrib.gis.geos import GEOSGeometry
-from api.models import BusStop, Location, TrainStop, Substation
+from api.models import BusStop, Location, TrainStop, Substation, OverheadLine
 
 
 class TestBusStopModel(TestCase):

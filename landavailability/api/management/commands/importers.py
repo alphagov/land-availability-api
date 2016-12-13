@@ -45,5 +45,5 @@ class ShapefileImportCommand(BaseCommand):
             reader = shapefile.Reader(shp_file_name)
             for record in reader.shapeRecords():
                 if record.shape.shapeType == shapefile.NULL:
-                    continue 
+                    continue
                 self.process_record(record)
