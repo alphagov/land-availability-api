@@ -446,6 +446,135 @@ class TestLocationModel(TestCase):
         self.assertIsNotNone(saved_location.nearest_substation)
         self.assertTrue(saved_location.nearest_substation_distance > 0)
 
+    @pytest.mark.django_db
+    def test_update_nearest_overheadline_on_new_location(self):
+        ohl = OverheadLine()
+        ohl.gdo_gid = '12345678'
+        ohl_geometry = """
+            {
+                "type": "LineString",
+                "coordinates":
+                    [
+                        [-2.373197446341212, 53.435409941817795],
+                        [-2.3750377532284324, 53.43243794909445],
+                        [-2.376610485110038, 53.429871256256185],
+                        [-2.378316153812549, 53.42704345147863]
+                    ]
+            }
+        """
+        ohl.geom = GEOSGeometry(ohl_geometry, srid=4326)
+        ohl.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.373605477415186, 53.40969504659278],
+                                [-2.3737618172100063, 53.409339507361864],
+                                [-2.3736420825281206, 53.409349059663356],
+                                [-2.3736136182503316, 53.40925098435937],
+                                [-2.372348437061216, 53.40941673318565],
+                                [-2.3723238976272407, 53.409362878222495],
+                                [-2.371773640845859, 53.40943257437743],
+                                [-2.3718032009919567, 53.40951191448939],
+                                [-2.3718245008682466, 53.40956909854221],
+                                [-2.3718353336832725, 53.4095981768949],
+                                [-2.372388619083221, 53.40952876960275],
+                                [-2.372366986029961, 53.40974214341905],
+                                [-2.37244330450709, 53.40977355411032],
+                                [-2.3724480893933726, 53.40980293194619],
+                                [-2.3730546640198655, 53.40984058711081],
+                                [-2.3730816588728425, 53.409842195613976],
+                                [-2.373519931021509, 53.40988946797718],
+                                [-2.3736042816221192, 53.409901787986364],
+                                [-2.3736898279409133, 53.40970736641803],
+                                [-2.373605477415186, 53.40969504659278]
+                            ]
+                        ]
+                    ]
+            }
+        """
+
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        saved_location = Location.objects.first()
+
+        self.assertIsNotNone(saved_location.nearest_ohl)
+        self.assertTrue(saved_location.nearest_ohl_distance > 0)
+
+    @pytest.mark.django_db
+    def test_overheadline_pre_delete_signal(self):
+        ohl = OverheadLine()
+        ohl.gdo_gid = '12345678'
+        ohl_geometry = """
+            {
+                "type": "LineString",
+                "coordinates":
+                    [
+                        [-2.373197446341212, 53.435409941817795],
+                        [-2.3750377532284324, 53.43243794909445],
+                        [-2.376610485110038, 53.429871256256185],
+                        [-2.378316153812549, 53.42704345147863]
+                    ]
+            }
+        """
+        ohl.geom = GEOSGeometry(ohl_geometry, srid=4326)
+        ohl.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.373605477415186, 53.40969504659278],
+                                [-2.3737618172100063, 53.409339507361864],
+                                [-2.3736420825281206, 53.409349059663356],
+                                [-2.3736136182503316, 53.40925098435937],
+                                [-2.372348437061216, 53.40941673318565],
+                                [-2.3723238976272407, 53.409362878222495],
+                                [-2.371773640845859, 53.40943257437743],
+                                [-2.3718032009919567, 53.40951191448939],
+                                [-2.3718245008682466, 53.40956909854221],
+                                [-2.3718353336832725, 53.4095981768949],
+                                [-2.372388619083221, 53.40952876960275],
+                                [-2.372366986029961, 53.40974214341905],
+                                [-2.37244330450709, 53.40977355411032],
+                                [-2.3724480893933726, 53.40980293194619],
+                                [-2.3730546640198655, 53.40984058711081],
+                                [-2.3730816588728425, 53.409842195613976],
+                                [-2.373519931021509, 53.40988946797718],
+                                [-2.3736042816221192, 53.409901787986364],
+                                [-2.3736898279409133, 53.40970736641803],
+                                [-2.373605477415186, 53.40969504659278]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.nearest_ohl = ohl
+        location.save()
+
+        self.assertIsNotNone(location.nearest_ohl)
+
+        ohl.delete()
+
+        changed_location = Location.objects.first()
+        self.assertIsNone(changed_location.nearest_ohl)
+        self.assertEqual(changed_location.nearest_ohl_distance, 0)
+
 
 class TestTrainStopModel(TestCase):
     @pytest.mark.django_db
@@ -571,3 +700,68 @@ class TestSubstationModel(TestCase):
             updated_location.nearest_substation.name,
             'Test Substation')
         self.assertIsNotNone(updated_location.nearest_substation_distance)
+
+
+class TestOverheadLineModel(TestCase):
+    @pytest.mark.django_db
+    def test_update_location_no_overheadline(self):
+        ohl = OverheadLine()
+        ohl.gdo_gid = '12345678'
+        ohl_geometry = """
+            {
+                "type": "LineString",
+                "coordinates":
+                    [
+                        [-2.373197446341212, 53.435409941817795],
+                        [-2.3750377532284324, 53.43243794909445],
+                        [-2.376610485110038, 53.429871256256185],
+                        [-2.378316153812549, 53.42704345147863]
+                    ]
+            }
+        """
+        ohl.geom = GEOSGeometry(ohl_geometry, srid=4326)
+        ohl.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.373605477415186, 53.40969504659278],
+                                [-2.3737618172100063, 53.409339507361864],
+                                [-2.3736420825281206, 53.409349059663356],
+                                [-2.3736136182503316, 53.40925098435937],
+                                [-2.372348437061216, 53.40941673318565],
+                                [-2.3723238976272407, 53.409362878222495],
+                                [-2.371773640845859, 53.40943257437743],
+                                [-2.3718032009919567, 53.40951191448939],
+                                [-2.3718245008682466, 53.40956909854221],
+                                [-2.3718353336832725, 53.4095981768949],
+                                [-2.372388619083221, 53.40952876960275],
+                                [-2.372366986029961, 53.40974214341905],
+                                [-2.37244330450709, 53.40977355411032],
+                                [-2.3724480893933726, 53.40980293194619],
+                                [-2.3730546640198655, 53.40984058711081],
+                                [-2.3730816588728425, 53.409842195613976],
+                                [-2.373519931021509, 53.40988946797718],
+                                [-2.3736042816221192, 53.409901787986364],
+                                [-2.3736898279409133, 53.40970736641803],
+                                [-2.373605477415186, 53.40969504659278]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        ohl.update_close_locations(default_range=3000)
+
+        updated_location = Location.objects.first()
+        self.assertEqual(updated_location.nearest_ohl.gdo_gid, '12345678')
+        self.assertIsNotNone(updated_location.nearest_ohl_distance)

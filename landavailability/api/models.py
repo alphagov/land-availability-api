@@ -155,25 +155,21 @@ class OverheadLine(models.Model):
     operating = models.CharField(max_length=255, blank=True, null=True)
     circuit_1 = models.CharField(max_length=255, blank=True, null=True)
     circuit_2 = models.CharField(max_length=255, blank=True, null=True)
-    geom = models.MultiLineStringField(geography=True, spatial_index=True)
+    geom = models.GeometryField(geography=True, spatial_index=True)
 
-    # I need to comment this out for now because calculating the distance
-    # between a line and the nearest locations is taking ages (probably
-    # because a line could go from a side of the UK to another)
+    def update_close_locations(self, default_range=1000):
+        locations = Location.objects.filter(
+            geom__dwithin=(self.geom, D(m=default_range))).\
+            annotate(distance=Distance('geom', self.geom))
 
-    # def update_close_locations(self, default_range=1000):
-    #     locations = Location.objects.filter(
-    #         geom__dwithin=(self.geom, D(m=default_range))).\
-    #         annotate(distance=Distance('geom', self.geom))
+        for location in locations:
+            if location.nearest_ohl:
+                if location.distance.m > location.nearest_ohl_distance:
+                    continue
 
-    #     for location in locations:
-    #         if location.nearest_ohl:
-    #             if location.distance.m > location.nearest_ohl_distance:
-    #                 continue
-
-    #         location.nearest_ohl = self
-    #         location.nearest_ohl_distance = location.distance.m
-    #         location.save()
+            location.nearest_ohl = self
+            location.nearest_ohl_distance = location.distance.m
+            location.save()
 
 
 @receiver(pre_delete, sender=OverheadLine, weak=False)
@@ -236,10 +232,20 @@ class Location(models.Model):
             self.nearest_substation = sss[0]
             self.nearest_substation_distance = sss[0].distance.m
 
+    def update_nearest_overheadline(self, distance=3000):
+        oh_lines = OverheadLine.objects.filter(
+            geom__dwithin=(self.geom, D(m=distance))).annotate(
+            distance=Distance('geom', self.geom)).order_by('distance')
+
+        if len(oh_lines) > 0:
+            self.nearest_ohl = oh_lines[0]
+            self.nearest_ohl_distance = oh_lines[0].distance.m
+
     def save(self, *args, **kwargs):
         if self.pk is None:
             self.update_nearest_busstop()
             self.update_nearest_trainstop()
             self.update_nearest_substation()
+            self.update_nearest_overheadline()
 
         super(Location, self).save(*args, **kwargs)
