@@ -24,18 +24,11 @@ class Command(ShapefileImportCommand):
         ohl.operating = record.record[5]
         ohl.circuit_1 = record.record[6]
         ohl.circuit_2 = record.record[7]
-
-        if record.shape.__geo_interface__['type'] == 'MultiLineString':
-            ohl.geom = GEOSGeometry(
+        ohl.geom = GEOSGeometry(
                 json.dumps(record.shape.__geo_interface__), srid=27700)
-        if record.shape.__geo_interface__['type'] == 'LineString':
-            line_string = GEOSGeometry(
-                json.dumps(record.shape.__geo_interface__), srid=27700)
-            multi_line = MultiLineString(line_string, )
-            ohl.geom = multi_line
 
         try:
             ohl.save()
-            # ohl.update_close_locations()
+            ohl.update_close_locations()
         except Exception as e:
             print('Could not add: {0}'.format(record.record))
