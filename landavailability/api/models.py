@@ -182,6 +182,38 @@ def overheadline_predelete_handler(sender, instance, **kwargs):
         update(nearest_ohl=None, nearest_ohl_distance=0)
 
 
+class Motorway(models.Model):
+    # Describe an instance of Motorway
+
+    identifier = models.CharField(db_index=True, max_length=255)
+    number = models.CharField(max_length=255, blank=True, null=True)
+    point = models.PointField(geography=True, spatial_index=True)
+
+    def update_close_locations(self, default_range=1000):
+        locations = Location.objects.filter(
+            geom__dwithin=(self.point, D(m=default_range))).\
+            annotate(distance=Distance('geom', self.point))
+
+        for location in locations:
+            if location.nearest_motorway:
+                if location.distance.m > location.nearest_motorway_distance:
+                    continue
+
+            location.nearest_motorway = self
+            location.nearest_motorway_distance = location.distance.m
+            location.save()
+
+
+@receiver(pre_delete, sender=Motorway, weak=False)
+def motorway_predelete_handler(sender, instance, **kwargs):
+    """
+    Whenever we try to delete a Motorway, we search all the Locations
+    using it and we remove the reference, so the object can be safely deleted.
+    """
+    Location.objects.filter(nearest_motorway__id=instance.id).\
+        update(nearest_motorway=None, nearest_motorway_distance=0)
+
+
 class Location(models.Model):
     # Describes an instance of a Location
 
@@ -204,6 +236,9 @@ class Location(models.Model):
     nearest_ohl = models.ForeignKey(
         OverheadLine, on_delete=models.SET_NULL, null=True)
     nearest_ohl_distance = models.FloatField(null=True)  # meters
+    nearest_motorway = models.ForeignKey(
+        Motorway, on_delete=models.SET_NULL, null=True)
+    nearest_motorway_distance = models.FloatField(null=True)  # meters
 
     def update_nearest_busstop(self, distance=1000):
         bss = BusStop.objects.filter(
@@ -241,11 +276,21 @@ class Location(models.Model):
             self.nearest_ohl = oh_lines[0]
             self.nearest_ohl_distance = oh_lines[0].distance.m
 
+    def update_nearest_motorway(self, distance=6000):
+        motorways = Motorway.objects.filter(
+            point__dwithin=(self.geom, D(m=distance))).annotate(
+            distance=Distance('point', self.geom)).order_by('distance')
+
+        if len(motorways) > 0:
+            self.nearest_motorway = motorways[0]
+            self.nearest_motorway_distance = motorways[0].distance.m
+
     def save(self, *args, **kwargs):
         if self.pk is None:
             self.update_nearest_busstop()
             self.update_nearest_trainstop()
             self.update_nearest_substation()
             self.update_nearest_overheadline()
+            self.update_nearest_motorway()
 
         super(Location, self).save(*args, **kwargs)
