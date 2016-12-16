@@ -40,7 +40,7 @@ class Command(CSVImportCommand):
 
             try:
                 broadband.save()
-                # broadband.update_close_locations()
+                broadband.update_close_locations()
             except Exception as e:
                 print('Could not add: {0}'.format(row))
         except CodePoint.DoesNotExist:
