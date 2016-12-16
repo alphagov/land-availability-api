@@ -214,6 +214,21 @@ def motorway_predelete_handler(sender, instance, **kwargs):
         update(nearest_motorway=None, nearest_motorway_distance=0)
 
 
+class Broadband(models.Model):
+    # Describes an instance of Broadband
+
+    postcode = models.CharField(db_index=True, max_length=255)
+    point = models.PointField(geography=True, spatial_index=True)
+    speed_30_mb_percentage = models.DecimalField(
+        max_digits=5, decimal_places=2)
+    min_download_speed = models.DecimalField(max_digits=5, decimal_places=2)
+    avg_download_speed = models.DecimalField(max_digits=5, decimal_places=2)
+    max_download_speed = models.DecimalField(max_digits=5, decimal_places=2)
+    min_upload_speed = models.DecimalField(max_digits=5, decimal_places=2)
+    avg_upload_speed = models.DecimalField(max_digits=5, decimal_places=2)
+    max_upload_speed = models.DecimalField(max_digits=5, decimal_places=2)
+
+
 class Location(models.Model):
     # Describes an instance of a Location
 
