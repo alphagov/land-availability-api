@@ -4,7 +4,8 @@ import json
 from django.contrib.gis.geos import Point
 from django.contrib.gis.geos import GEOSGeometry
 from api.models import (
-    BusStop, Location, TrainStop, Substation, OverheadLine, Motorway)
+    BusStop, Location, TrainStop, Substation, OverheadLine, Motorway,
+    Broadband)
 
 
 class TestBusStopModel(TestCase):
@@ -730,6 +731,132 @@ class TestLocationModel(TestCase):
         self.assertIsNotNone(saved_location.nearest_motorway)
         self.assertTrue(saved_location.nearest_motorway_distance > 0)
 
+    @pytest.mark.django_db
+    def test_broadband_pre_delete_signal(self):
+        broadband = Broadband()
+        broadband.postcode = 'M11AD'
+        broadband.speed_30_mb_percentage = 100.00
+        broadband_geometry = """
+            {
+                "type": "Point",
+                "coordinates": [-2.2452159208688465, 53.483847893747615]}
+        """
+        broadband.point = GEOSGeometry(broadband_geometry, srid=4326)
+        broadband.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.2448113976839146, 53.479316862617466],
+                                [-2.244814306841789, 53.47932489233583],
+                                [-2.244738077220046, 53.479421413912576],
+                                [-2.2447272470745734, 53.47942727861265],
+                                [-2.244711466134476, 53.479423814449135],
+                                [-2.244483217813091, 53.47971439361897],
+                                [-2.2444712987814928, 53.47972220203262],
+                                [-2.24445180047244, 53.4797326146407],
+                                [-2.24442791399741, 53.47973720271925],
+                                [-2.2443941737781885, 53.479731438281924],
+                                [-2.2443625773478315, 53.479718532610015],
+                                [-2.2432343440218494, 53.47898353113357],
+                                [-2.243233192363991, 53.478971866457755],
+                                [-2.2432548493734425, 53.47895690148748],
+                                [-2.2434746176478515, 53.4788001801132],
+                                [-2.243505027912349, 53.47879557891801],
+                                [-2.2447536549959026, 53.478918828143414],
+                                [-2.244985343162669, 53.478943637478636],
+                                [-2.2450353934064458, 53.478950671601844],
+                                [-2.245047409240872, 53.47896231396205],
+                                [-2.2450496950241248, 53.47897981879277],
+                                [-2.2448036988684428, 53.47930131937876],
+                                [-2.2447994694859075, 53.47931259059224],
+                                [-2.2448113976839146, 53.479316862617466]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.nearest_broadband = broadband
+        location.save()
+
+        self.assertIsNotNone(location.nearest_broadband)
+
+        broadband.delete()
+
+        changed_location = Location.objects.first()
+        self.assertIsNone(changed_location.nearest_broadband)
+        self.assertEqual(changed_location.nearest_broadband_distance, 0)
+        self.assertEqual(changed_location.nearest_broadband_fast, False)
+
+    @pytest.mark.django_db
+    def test_update_nearest_broadband_on_new_location(self):
+        broadband = Broadband()
+        broadband.postcode = 'M11AD'
+        broadband.speed_30_mb_percentage = 100.00
+        broadband_geometry = """
+            {
+                "type": "Point",
+                "coordinates": [-2.2452159208688465, 53.483847893747615]}
+        """
+        broadband.point = GEOSGeometry(broadband_geometry, srid=4326)
+        broadband.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.2448113976839146, 53.479316862617466],
+                                [-2.244814306841789, 53.47932489233583],
+                                [-2.244738077220046, 53.479421413912576],
+                                [-2.2447272470745734, 53.47942727861265],
+                                [-2.244711466134476, 53.479423814449135],
+                                [-2.244483217813091, 53.47971439361897],
+                                [-2.2444712987814928, 53.47972220203262],
+                                [-2.24445180047244, 53.4797326146407],
+                                [-2.24442791399741, 53.47973720271925],
+                                [-2.2443941737781885, 53.479731438281924],
+                                [-2.2443625773478315, 53.479718532610015],
+                                [-2.2432343440218494, 53.47898353113357],
+                                [-2.243233192363991, 53.478971866457755],
+                                [-2.2432548493734425, 53.47895690148748],
+                                [-2.2434746176478515, 53.4788001801132],
+                                [-2.243505027912349, 53.47879557891801],
+                                [-2.2447536549959026, 53.478918828143414],
+                                [-2.244985343162669, 53.478943637478636],
+                                [-2.2450353934064458, 53.478950671601844],
+                                [-2.245047409240872, 53.47896231396205],
+                                [-2.2450496950241248, 53.47897981879277],
+                                [-2.2448036988684428, 53.47930131937876],
+                                [-2.2447994694859075, 53.47931259059224],
+                                [-2.2448113976839146, 53.479316862617466]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        saved_location = Location.objects.first()
+
+        self.assertIsNotNone(saved_location.nearest_broadband)
+        self.assertTrue(saved_location.nearest_broadband_distance > 0)
+        self.assertEqual(saved_location.nearest_broadband_fast, True)
+
 
 class TestTrainStopModel(TestCase):
     @pytest.mark.django_db
@@ -1000,3 +1127,69 @@ class TestMotorwayModel(TestCase):
             updated_location.nearest_motorway.identifier,
             '481e5ca4-97ce-459d-9838-f9f7ed91cc23')
         self.assertIsNotNone(updated_location.nearest_motorway_distance)
+
+
+class TestBroadbandModel(TestCase):
+    @pytest.mark.django_db
+    def test_update_location_no_broadband(self):
+        broadband = Broadband()
+        broadband.postcode = 'M11AD'
+        broadband.speed_30_mb_percentage = 100.00
+        broadband_geometry = """
+            {
+                "type": "Point",
+                "coordinates": [-2.2452159208688465, 53.483847893747615]}
+        """
+        broadband.point = GEOSGeometry(broadband_geometry, srid=4326)
+        broadband.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.2448113976839146, 53.479316862617466],
+                                [-2.244814306841789, 53.47932489233583],
+                                [-2.244738077220046, 53.479421413912576],
+                                [-2.2447272470745734, 53.47942727861265],
+                                [-2.244711466134476, 53.479423814449135],
+                                [-2.244483217813091, 53.47971439361897],
+                                [-2.2444712987814928, 53.47972220203262],
+                                [-2.24445180047244, 53.4797326146407],
+                                [-2.24442791399741, 53.47973720271925],
+                                [-2.2443941737781885, 53.479731438281924],
+                                [-2.2443625773478315, 53.479718532610015],
+                                [-2.2432343440218494, 53.47898353113357],
+                                [-2.243233192363991, 53.478971866457755],
+                                [-2.2432548493734425, 53.47895690148748],
+                                [-2.2434746176478515, 53.4788001801132],
+                                [-2.243505027912349, 53.47879557891801],
+                                [-2.2447536549959026, 53.478918828143414],
+                                [-2.244985343162669, 53.478943637478636],
+                                [-2.2450353934064458, 53.478950671601844],
+                                [-2.245047409240872, 53.47896231396205],
+                                [-2.2450496950241248, 53.47897981879277],
+                                [-2.2448036988684428, 53.47930131937876],
+                                [-2.2447994694859075, 53.47931259059224],
+                                [-2.2448113976839146, 53.479316862617466]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        broadband.update_close_locations()
+
+        updated_location = Location.objects.first()
+        self.assertEqual(
+            updated_location.nearest_broadband.postcode, 'M11AD')
+        self.assertEqual(
+            updated_location.nearest_broadband_fast, True)
+        self.assertIsNotNone(updated_location.nearest_broadband_distance)

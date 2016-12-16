@@ -214,6 +214,58 @@ def motorway_predelete_handler(sender, instance, **kwargs):
         update(nearest_motorway=None, nearest_motorway_distance=0)
 
 
+class Broadband(models.Model):
+    # Describes an instance of Broadband
+
+    postcode = models.CharField(db_index=True, max_length=255)
+    point = models.PointField(geography=True, spatial_index=True)
+    speed_30_mb_percentage = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True)
+    min_download_speed = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True)
+    avg_download_speed = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True)
+    max_download_speed = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True)
+    min_upload_speed = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True)
+    avg_upload_speed = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True)
+    max_upload_speed = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True)
+
+    def update_close_locations(self, default_range=1000):
+        locations = Location.objects.filter(
+            geom__dwithin=(self.point, D(m=default_range))).\
+            annotate(distance=Distance('geom', self.point))
+
+        for location in locations:
+            if location.nearest_broadband:
+                if location.distance.m > location.nearest_broadband_distance:
+                    continue
+
+            location.nearest_broadband = self
+            location.nearest_broadband_distance = location.distance.m
+
+            if self.speed_30_mb_percentage > 0:
+                location.nearest_broadband_fast = True
+
+            location.save()
+
+
+@receiver(pre_delete, sender=Broadband, weak=False)
+def broadband_predelete_handler(sender, instance, **kwargs):
+    """
+    Whenever we try to delete a Broadband, we search all the Locations
+    using it and we remove the reference, so the object can be safely deleted.
+    """
+    Location.objects.filter(nearest_broadband__id=instance.id).\
+        update(
+            nearest_broadband=None,
+            nearest_broadband_distance=0,
+            nearest_broadband_fast=False)
+
+
 class Location(models.Model):
     # Describes an instance of a Location
 
@@ -239,6 +291,10 @@ class Location(models.Model):
     nearest_motorway = models.ForeignKey(
         Motorway, on_delete=models.SET_NULL, null=True)
     nearest_motorway_distance = models.FloatField(null=True)  # meters
+    nearest_broadband = models.ForeignKey(
+        Broadband, on_delete=models.SET_NULL, null=True)
+    nearest_broadband_distance = models.FloatField(null=True)  # meters
+    nearest_broadband_fast = models.NullBooleanField()
 
     def update_nearest_busstop(self, distance=1000):
         bss = BusStop.objects.filter(
@@ -285,6 +341,17 @@ class Location(models.Model):
             self.nearest_motorway = motorways[0]
             self.nearest_motorway_distance = motorways[0].distance.m
 
+    def update_nearest_broadband(self, distance=500):
+        broadbands = Broadband.objects.filter(
+            point__dwithin=(self.geom, D(m=distance))).annotate(
+            distance=Distance('point', self.geom)).order_by('distance')
+
+        if len(broadbands) > 0:
+            self.nearest_broadband = broadbands[0]
+            self.nearest_broadband_distance = broadbands[0].distance.m
+            if broadbands[0].speed_30_mb_percentage > 0:
+                self.nearest_broadband_fast = True
+
     def save(self, *args, **kwargs):
         if self.pk is None:
             self.update_nearest_busstop()
@@ -292,5 +359,6 @@ class Location(models.Model):
             self.update_nearest_substation()
             self.update_nearest_overheadline()
             self.update_nearest_motorway()
+            self.update_nearest_broadband()
 
         super(Location, self).save(*args, **kwargs)

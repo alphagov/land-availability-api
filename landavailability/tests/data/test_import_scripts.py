@@ -15,7 +15,11 @@ from api.management.commands.import_trains import (
 from api.management.commands.import_manchester_lands import (
     Command as ManchesterLandsCommand,
 )
-from api.models import Address, BusStop, CodePoint, TrainStop, Location
+from api.management.commands.import_broadband import (
+    Command as BroadbandCommand,
+)
+from api.models import (
+    Address, BusStop, CodePoint, TrainStop, Location, Broadband)
 from django.contrib.gis.geos import Point
 import json
 
@@ -158,3 +162,32 @@ class TestManchesterLandCommand(TestCase):
 
         ManchesterLandsCommand().process_feature(json.loads(feature_json))
         self.assertEqual(Location.objects.count(), 1)
+
+
+class TestBroadbandCommand(TestCase):
+    @pytest.mark.django_db
+    def test_import_broadband_process_row(self):
+        codepoint = CodePoint()
+        codepoint.postcode = 'ME58TL'
+        codepoint.point = Point(
+            float("-1.83356713993623"), float("55.4168769443259"))
+        codepoint.quality = 10
+        codepoint.country = 'E92000001'
+        codepoint.nhs_region = 'E19000001'
+        codepoint.nhs_health_authority = 'E18000002'
+        codepoint.county = ''
+        codepoint.district = 'E08000002'
+        codepoint.ward = 'E05000681'
+        codepoint.save()
+
+        broadband_row = [
+            'ME58TL', '100', '100', '2', '2', '1', '12', '49.1',
+            '30', '0.9', '152', '63.3', '2.9', '67', '6.1', '4.7', '2', '0.6',
+            '15', '5.8', '0.9', '6.2', '1.1']
+
+        BroadbandCommand().process_row(broadband_row)
+        self.assertEqual(Broadband.objects.count(), 1)
+
+        broadband = Broadband.objects.first()
+        self.assertEqual(broadband.postcode, 'ME58TL')
+        self.assertEqual(broadband.speed_30_mb_percentage, 100.00)
