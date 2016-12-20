@@ -18,8 +18,11 @@ from api.management.commands.import_manchester_lands import (
 from api.management.commands.import_broadband import (
     Command as BroadbandCommand,
 )
+from api.management.commands.import_greenbelts import (
+    Command as GreenbeltCommand,
+)
 from api.models import (
-    Address, BusStop, CodePoint, TrainStop, Location, Broadband)
+    Address, BusStop, CodePoint, TrainStop, Location, Broadband, Greenbelt)
 from django.contrib.gis.geos import Point
 import json
 
@@ -191,3 +194,108 @@ class TestBroadbandCommand(TestCase):
         broadband = Broadband.objects.first()
         self.assertEqual(broadband.postcode, 'ME58TL')
         self.assertEqual(broadband.speed_30_mb_percentage, 100.00)
+
+
+class TestGreenbeltCommand(TestCase):
+    @pytest.mark.django_db
+    def test_import_greenbelt_process_feature(self):
+        feature_json = """
+        {
+            "geometry": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                [
+                    [
+                    [
+                        -2.1614837256814963,
+                        53.07183331520438,
+                        0
+                    ],
+                    [
+                        -2.161440204004493,
+                        53.07167876512527,
+                        0
+                    ],
+                    [
+                        -2.161426422046515,
+                        53.07158231050548,
+                        0
+                    ],
+                    [
+                        -2.161412261861244,
+                        53.07128283205548,
+                        0
+                    ],
+                    [
+                        -2.161373377871479,
+                        53.071211109880664,
+                        0
+                    ],
+                    [
+                        -2.161369504865456,
+                        53.07118401041043,
+                        0
+                    ],
+                    [
+                        -2.1617677327485008,
+                        53.07111245525075,
+                        0
+                    ],
+                    [
+                        -2.1617682739467705,
+                        53.071109120469266,
+                        0
+                    ],
+                    [
+                        -2.1620568237599738,
+                        53.07147709017702,
+                        0
+                    ],
+                    [
+                        -2.162246918923053,
+                        53.07170561414385,
+                        0
+                    ],
+                    [
+                        -2.162193868651531,
+                        53.07171503969784,
+                        0
+                    ],
+                    [
+                        -2.162142294698858,
+                        53.07172373689699,
+                        0
+                    ],
+                    [
+                        -2.1621361236605248,
+                        53.07171871503741,
+                        0
+                    ],
+                    [
+                        -2.1614837256814963,
+                        53.07183331520438,
+                        0
+                    ]
+                    ]
+                ]
+                ]
+            },
+            "geometry_name": "the_geom",
+            "id": "Local_Authority_green_belt_boundaries_2014-15.25",
+            "type": "Feature",
+            "properties": {
+                "Shape_Area": 2888.41601134,
+                "OBJECTID_1": 25,
+                "OBJECTID": 25,
+                "Shape_Le_1": 228.402024269,
+                "LA_Name": "City of Stoke-on-Trent (B)",
+                "ONS_CODE": "E06000021",
+                "Year": "2014/15",
+                "Area_Ha": 0.288841578377,
+                "GB_name": "Stoke Greenbelt",
+                "Perim_Km": 0.228402022276
+            }
+        }"""
+
+        GreenbeltCommand().process_feature(json.loads(feature_json))
+        self.assertEqual(Greenbelt.objects.count(), 1)

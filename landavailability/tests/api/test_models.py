@@ -5,7 +5,7 @@ from django.contrib.gis.geos import Point
 from django.contrib.gis.geos import GEOSGeometry
 from api.models import (
     BusStop, Location, TrainStop, Substation, OverheadLine, Motorway,
-    Broadband)
+    Broadband, Greenbelt)
 
 
 class TestBusStopModel(TestCase):
@@ -857,6 +857,134 @@ class TestLocationModel(TestCase):
         self.assertTrue(saved_location.nearest_broadband_distance > 0)
         self.assertEqual(saved_location.nearest_broadband_fast, True)
 
+    @pytest.mark.django_db
+    def test_greenbelt_pre_delete_signal(self):
+        greenbelt = Greenbelt()
+        greenbelt.code = 'Local_Authority_green_belt_boundaries_2014-15.25'
+        greenbelt_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates": [
+                [
+                    [
+                    [
+                        -2.1614837256814963,
+                        53.07183331520438,
+                        0
+                    ],
+                    [
+                        -2.161440204004493,
+                        53.07167876512527,
+                        0
+                    ],
+                    [
+                        -2.161426422046515,
+                        53.07158231050548,
+                        0
+                    ],
+                    [
+                        -2.161412261861244,
+                        53.07128283205548,
+                        0
+                    ],
+                    [
+                        -2.161373377871479,
+                        53.071211109880664,
+                        0
+                    ],
+                    [
+                        -2.161369504865456,
+                        53.07118401041043,
+                        0
+                    ],
+                    [
+                        -2.1617677327485008,
+                        53.07111245525075,
+                        0
+                    ],
+                    [
+                        -2.1617682739467705,
+                        53.071109120469266,
+                        0
+                    ],
+                    [
+                        -2.1620568237599738,
+                        53.07147709017702,
+                        0
+                    ],
+                    [
+                        -2.162246918923053,
+                        53.07170561414385,
+                        0
+                    ],
+                    [
+                        -2.162193868651531,
+                        53.07171503969784,
+                        0
+                    ],
+                    [
+                        -2.162142294698858,
+                        53.07172373689699,
+                        0
+                    ],
+                    [
+                        -2.1621361236605248,
+                        53.07171871503741,
+                        0
+                    ],
+                    [
+                        -2.1614837256814963,
+                        53.07183331520438,
+                        0
+                    ]
+                    ]
+                ]
+                ]
+            }
+        """
+        greenbelt.geom = GEOSGeometry(greenbelt_geometry, srid=4326)
+        greenbelt.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.2611006839832566, 53.38038878620092],
+                                [-2.2610825125994793, 53.38038614557534],
+                                [-2.2610863627594426, 53.38037660921687],
+                                [-2.2610952486264946, 53.38035474743402],
+                                [-2.2611566375286523, 53.380363691529595],
+                                [-2.261181463464652, 53.38036723261247],
+                                [-2.2612925054090502, 53.3803834385581],
+                                [-2.2612817028396486, 53.38041141681172],
+                                [-2.261280221050265, 53.380414925617124],
+                                [-2.2611690287016595, 53.38039871998939],
+                                [-2.2611458243233487, 53.38039534703601],
+                                [-2.261144051871036, 53.3803950893482],
+                                [-2.2611006839832566, 53.38038878620092]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.nearest_greenbelt = greenbelt
+        location.save()
+
+        self.assertIsNotNone(location.nearest_greenbelt)
+
+        greenbelt.delete()
+
+        changed_location = Location.objects.first()
+        self.assertIsNone(changed_location.nearest_greenbelt)
+        self.assertEqual(changed_location.nearest_greenbelt_distance, 0)
+
 
 class TestTrainStopModel(TestCase):
     @pytest.mark.django_db
@@ -1193,3 +1321,132 @@ class TestBroadbandModel(TestCase):
         self.assertEqual(
             updated_location.nearest_broadband_fast, True)
         self.assertIsNotNone(updated_location.nearest_broadband_distance)
+
+
+class TestGreenbeltModel(TestCase):
+    @pytest.mark.django_db
+    def test_update_location_no_greenbelt(self):
+        greenbelt = Greenbelt()
+        greenbelt.code = 'Local_Authority_green_belt_boundaries_2014-15.25'
+        greenbelt_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates": [
+                [
+                    [
+                    [
+                        -2.1614837256814963,
+                        53.07183331520438,
+                        0
+                    ],
+                    [
+                        -2.161440204004493,
+                        53.07167876512527,
+                        0
+                    ],
+                    [
+                        -2.161426422046515,
+                        53.07158231050548,
+                        0
+                    ],
+                    [
+                        -2.161412261861244,
+                        53.07128283205548,
+                        0
+                    ],
+                    [
+                        -2.161373377871479,
+                        53.071211109880664,
+                        0
+                    ],
+                    [
+                        -2.161369504865456,
+                        53.07118401041043,
+                        0
+                    ],
+                    [
+                        -2.1617677327485008,
+                        53.07111245525075,
+                        0
+                    ],
+                    [
+                        -2.1617682739467705,
+                        53.071109120469266,
+                        0
+                    ],
+                    [
+                        -2.1620568237599738,
+                        53.07147709017702,
+                        0
+                    ],
+                    [
+                        -2.162246918923053,
+                        53.07170561414385,
+                        0
+                    ],
+                    [
+                        -2.162193868651531,
+                        53.07171503969784,
+                        0
+                    ],
+                    [
+                        -2.162142294698858,
+                        53.07172373689699,
+                        0
+                    ],
+                    [
+                        -2.1621361236605248,
+                        53.07171871503741,
+                        0
+                    ],
+                    [
+                        -2.1614837256814963,
+                        53.07183331520438,
+                        0
+                    ]
+                    ]
+                ]
+                ]
+            }
+        """
+        greenbelt.geom = GEOSGeometry(greenbelt_geometry, srid=4326)
+        greenbelt.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.2611006839832566, 53.38038878620092],
+                                [-2.2610825125994793, 53.38038614557534],
+                                [-2.2610863627594426, 53.38037660921687],
+                                [-2.2610952486264946, 53.38035474743402],
+                                [-2.2611566375286523, 53.380363691529595],
+                                [-2.261181463464652, 53.38036723261247],
+                                [-2.2612925054090502, 53.3803834385581],
+                                [-2.2612817028396486, 53.38041141681172],
+                                [-2.261280221050265, 53.380414925617124],
+                                [-2.2611690287016595, 53.38039871998939],
+                                [-2.2611458243233487, 53.38039534703601],
+                                [-2.261144051871036, 53.3803950893482],
+                                [-2.2611006839832566, 53.38038878620092]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        greenbelt.update_close_locations(default_range=35000)
+
+        updated_location = Location.objects.first()
+        self.assertEqual(
+            updated_location.nearest_greenbelt.code,
+            'Local_Authority_green_belt_boundaries_2014-15.25')
+        self.assertIsNotNone(updated_location.nearest_greenbelt_distance)
