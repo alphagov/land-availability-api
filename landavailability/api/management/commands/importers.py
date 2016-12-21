@@ -6,8 +6,9 @@ import shapefile
 class CSVImportCommand(BaseCommand):
     help = 'Import data from a CSV file'
 
-    def __init__(self, skip_header=False):
+    def __init__(self, skip_header=False, encoding=None):
         self.skip_header = skip_header
+        self.encoding = encoding
 
     def add_arguments(self, parser):
         parser.add_argument('csv_file', type=str)
@@ -19,7 +20,10 @@ class CSVImportCommand(BaseCommand):
         csv_file_name = options.get('csv_file')
 
         if csv_file_name:
-            with open(csv_file_name, newline='') as csvfile:
+            with open(
+                    csv_file_name,
+                    newline='', encoding=self.encoding) as csvfile:
+
                 reader = csv.reader(csvfile, delimiter=',', quotechar='"')
 
                 if self.skip_header:

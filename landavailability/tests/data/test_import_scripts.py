@@ -21,8 +21,12 @@ from api.management.commands.import_broadband import (
 from api.management.commands.import_greenbelts import (
     Command as GreenbeltCommand,
 )
+from api.management.commands.import_schools import (
+    Command as SchoolCommand,
+)
 from api.models import (
-    Address, BusStop, CodePoint, TrainStop, Location, Broadband, Greenbelt)
+    Address, BusStop, CodePoint, TrainStop, Location, Broadband, Greenbelt,
+    School)
 from django.contrib.gis.geos import Point
 import json
 
@@ -299,3 +303,34 @@ class TestGreenbeltCommand(TestCase):
 
         GreenbeltCommand().process_feature(json.loads(feature_json))
         self.assertEqual(Greenbelt.objects.count(), 1)
+
+
+class TestSchoolCommand(TestCase):
+    @pytest.mark.django_db
+    def test_import_school_process_row(self):
+
+        school_row = [
+            "100000", "201", "City of London", "3614",
+            "Sir John Cass's Foundation Primary School",
+            "Voluntary Aided School", "Open", "Not applicable", "",
+            "Not applicable", "", "Primary", "3", "11", "No Boarders",
+            "Does not have a sixth form", "Mixed","Church of England",
+            "Diocese of London", "Not applicable", "210", "No Special Classes",
+            "15-01-2015", "240", "125", "115", "21.5", "Not applicable", "",
+            "Not applicable", "", "Not under a federation", "", "", "",
+            "Not applicable", "18-04-2013", "Not in special measures",
+            "24-09-2015", "St James's Passage", "Duke's Place", "", "London",
+            "", "EC3A 5DE", "www.sirjohncassprimary.org", "02072831147",
+            "Mr", "T", "Wilson", "", "Headteacher", "Not applicable", "",
+            "Not applicable", "Not applicable", "Not applicable", "",
+            "Not applicable", "Not applicable", "", "", "", "London", "Tower",
+            "Cities of London and Westminster", "Urban major conurbation",
+            "E09000001", "533498", "181201", "City of London 001",
+            "City of London 001F", "", "999", "", ""]
+
+        SchoolCommand().process_row(school_row)
+        self.assertEqual(School.objects.count(), 1)
+
+        school = School.objects.first()
+        self.assertEqual(
+            school.school_name, "Sir John Cass's Foundation Primary School")
