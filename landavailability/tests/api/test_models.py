@@ -5,7 +5,7 @@ from django.contrib.gis.geos import Point
 from django.contrib.gis.geos import GEOSGeometry
 from api.models import (
     BusStop, Location, TrainStop, Substation, OverheadLine, Motorway,
-    Broadband, Greenbelt, School)
+    Broadband, Greenbelt, School, MetroTube)
 
 
 class TestBusStopModel(TestCase):
@@ -1089,6 +1089,108 @@ class TestLocationModel(TestCase):
         self.assertIsNotNone(saved_location.nearest_school)
         self.assertTrue(saved_location.nearest_school_distance > 0)
 
+    @pytest.mark.django_db
+    def test_metrotube_pre_delete_signal(self):
+        metrotube = MetroTube()
+        metrotube.atco_code = "1800ZZMAECC4"
+        metrotube.naptan_code = "aaabbbcc"
+        metrotube_geometry = """
+            {
+                "type": "Point",
+                "coordinates": [-2.3336233711, 53.4832127657]
+            }
+        """
+        metrotube.point = GEOSGeometry(metrotube_geometry, srid=4326)
+        metrotube.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.3328088326396546, 53.48350016949884],
+                                [-2.332878030388401, 53.483484696235884],
+                                [-2.332945714143332, 53.48346832830624],
+                                [-2.332950291189711, 53.4834755063256],
+                                [-2.3329769965276745, 53.48351812712473],
+                                [-2.3329930197562234, 53.48354369960115],
+                                [-2.3330090394818432, 53.48356882266139],
+                                [-2.3329932486920613, 53.48357291150509],
+                                [-2.3328203102968104, 53.483618785376436],
+                                [-2.3328050793169988, 53.48359815433043],
+                                [-2.332744901957888, 53.48351472919907],
+                                [-2.3328088326396546, 53.48350016949884]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.nearest_metrotube = metrotube
+        location.save()
+
+        self.assertIsNotNone(location.nearest_metrotube)
+
+        metrotube.delete()
+
+        changed_location = Location.objects.first()
+        self.assertIsNone(changed_location.nearest_metrotube)
+        self.assertEqual(changed_location.nearest_metrotube_distance, 0)
+
+    @pytest.mark.django_db
+    def test_update_nearest_metrotube_on_new_location(self):
+        metrotube = MetroTube()
+        metrotube.atco_code = "1800ZZMAECC4"
+        metrotube.naptan_code = "aaabbbcc"
+        metrotube_geometry = """
+            {
+                "type": "Point",
+                "coordinates": [-2.3336233711, 53.4832127657]
+            }
+        """
+        metrotube.point = GEOSGeometry(metrotube_geometry, srid=4326)
+        metrotube.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.3328088326396546, 53.48350016949884],
+                                [-2.332878030388401, 53.483484696235884],
+                                [-2.332945714143332, 53.48346832830624],
+                                [-2.332950291189711, 53.4834755063256],
+                                [-2.3329769965276745, 53.48351812712473],
+                                [-2.3329930197562234, 53.48354369960115],
+                                [-2.3330090394818432, 53.48356882266139],
+                                [-2.3329932486920613, 53.48357291150509],
+                                [-2.3328203102968104, 53.483618785376436],
+                                [-2.3328050793169988, 53.48359815433043],
+                                [-2.332744901957888, 53.48351472919907],
+                                [-2.3328088326396546, 53.48350016949884]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        saved_location = Location.objects.first()
+
+        self.assertIsNotNone(saved_location.nearest_metrotube)
+        self.assertTrue(saved_location.nearest_metrotube_distance > 0)
+
 
 class TestTrainStopModel(TestCase):
     @pytest.mark.django_db
@@ -1607,3 +1709,56 @@ class TestSchoolModel(TestCase):
         updated_location = Location.objects.first()
         self.assertEqual(updated_location.nearest_school.urn, '106451')
         self.assertIsNotNone(updated_location.nearest_school_distance)
+
+
+class TestMetroTubeModel(TestCase):
+    @pytest.mark.django_db
+    def test_update_location_no_metrotube(self):
+        metrotube = MetroTube()
+        metrotube.atco_code = "1800ZZMAECC4"
+        metrotube.naptan_code = "aaabbbcc"
+        metrotube_geometry = """
+            {
+                "type": "Point",
+                "coordinates": [-2.3336233711, 53.4832127657]
+            }
+        """
+        metrotube.point = GEOSGeometry(metrotube_geometry, srid=4326)
+        metrotube.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.3328088326396546, 53.48350016949884],
+                                [-2.332878030388401, 53.483484696235884],
+                                [-2.332945714143332, 53.48346832830624],
+                                [-2.332950291189711, 53.4834755063256],
+                                [-2.3329769965276745, 53.48351812712473],
+                                [-2.3329930197562234, 53.48354369960115],
+                                [-2.3330090394818432, 53.48356882266139],
+                                [-2.3329932486920613, 53.48357291150509],
+                                [-2.3328203102968104, 53.483618785376436],
+                                [-2.3328050793169988, 53.48359815433043],
+                                [-2.332744901957888, 53.48351472919907],
+                                [-2.3328088326396546, 53.48350016949884]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        metrotube.update_close_locations()
+
+        updated_location = Location.objects.first()
+        self.assertEqual(
+            updated_location.nearest_metrotube.atco_code, '1800ZZMAECC4')
+        self.assertIsNotNone(updated_location.nearest_metrotube_distance)

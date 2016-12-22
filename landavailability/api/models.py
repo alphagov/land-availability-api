@@ -353,6 +353,32 @@ class MetroTube(models.Model):
     locality = models.CharField(max_length=255, blank=True, null=True)
     point = models.PointField(geography=True, spatial_index=True)
 
+    def update_close_locations(self, default_range=1000):
+        locations = Location.objects.filter(
+            geom__dwithin=(self.point, D(m=default_range))).\
+            annotate(distance=Distance('geom', self.point))
+
+        for location in locations:
+            if location.nearest_metrotube:
+                if location.distance.m > location.nearest_metrotube_distance:
+                    continue
+
+            location.nearest_metrotube = self
+            location.nearest_metrotube_distance = location.distance.m
+            location.save()
+
+
+@receiver(pre_delete, sender=MetroTube, weak=False)
+def metrotube_predelete_handler(sender, instance, **kwargs):
+    """
+    Whenever we try to delete a MetroTube, we search all the Locations
+    using it and we remove the reference, so the object can be safely deleted.
+    """
+    Location.objects.filter(nearest_metrotube__id=instance.id).\
+        update(
+            nearest_metrotube=None,
+            nearest_metrotube_distance=0)
+
 
 class Location(models.Model):
     # Describes an instance of a Location
@@ -389,6 +415,9 @@ class Location(models.Model):
     nearest_school = models.ForeignKey(
         School, on_delete=models.SET_NULL, null=True)
     nearest_school_distance = models.FloatField(null=True)  # meters
+    nearest_metrotube = models.ForeignKey(
+        MetroTube, on_delete=models.SET_NULL, null=True)
+    nearest_metrotube_distance = models.FloatField(null=True)  # meters
 
     def update_nearest_busstop(self, distance=1000):
         bss = BusStop.objects.filter(
@@ -464,6 +493,15 @@ class Location(models.Model):
             self.nearest_school = schools[0]
             self.nearest_school_distance = schools[0].distance.m
 
+    def update_nearest_metrotube(self, distance=1000):
+        metrotubes = MetroTube.objects.filter(
+            point__dwithin=(self.geom, D(m=distance))).annotate(
+            distance=Distance('point', self.geom)).order_by('distance')
+
+        if len(metrotubes) > 0:
+            self.nearest_metrotube = metrotubes[0]
+            self.nearest_metrotube_distance = metrotubes[0].distance.m
+
     def save(self, *args, **kwargs):
         if self.pk is None:
             self.update_nearest_busstop()
@@ -473,5 +511,6 @@ class Location(models.Model):
             self.update_nearest_motorway()
             self.update_nearest_broadband()
             self.update_nearest_school()
+            self.update_nearest_metrotube()
 
         super(Location, self).save(*args, **kwargs)

@@ -27,6 +27,6 @@ class Command(CSVImportCommand):
 
             try:
                 metrotube.save()
-                # metrotube.update_close_locations()
+                metrotube.update_close_locations()
             except Exception as e:
                 print('Could not add: {0} because {1}'.format(row, e))
