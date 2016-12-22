@@ -510,6 +510,7 @@ class Location(models.Model):
             self.update_nearest_overheadline()
             self.update_nearest_motorway()
             self.update_nearest_broadband()
+            self.update_nearest_greenbelt()
             self.update_nearest_school()
             self.update_nearest_metrotube()
 
