@@ -24,9 +24,12 @@ from api.management.commands.import_greenbelts import (
 from api.management.commands.import_schools import (
     Command as SchoolCommand,
 )
+from api.management.commands.import_metrotube import (
+    Command as MetroTubeCommand,
+)
 from api.models import (
     Address, BusStop, CodePoint, TrainStop, Location, Broadband, Greenbelt,
-    School)
+    School, MetroTube)
 from django.contrib.gis.geos import Point
 import json
 
@@ -314,7 +317,7 @@ class TestSchoolCommand(TestCase):
             "Sir John Cass's Foundation Primary School",
             "Voluntary Aided School", "Open", "Not applicable", "",
             "Not applicable", "", "Primary", "3", "11", "No Boarders",
-            "Does not have a sixth form", "Mixed","Church of England",
+            "Does not have a sixth form", "Mixed", "Church of England",
             "Diocese of London", "Not applicable", "210", "No Special Classes",
             "15-01-2015", "240", "125", "115", "21.5", "Not applicable", "",
             "Not applicable", "", "Not under a federation", "", "", "",
@@ -334,3 +337,22 @@ class TestSchoolCommand(TestCase):
         school = School.objects.first()
         self.assertEqual(
             school.school_name, "Sir John Cass's Foundation Primary School")
+
+
+class TestMetroTubeCommand(TestCase):
+    @pytest.mark.django_db
+    def test_import_metrotube_process_row(self):
+
+        metrotube_row = [
+            "0100BRP90207", "bstmdat", "", "", "Royate Hill", "en", "", "", "",
+            "", "Fishponds Road", "en", "", "", "W-bound", "en", "W",
+            "E0035600", "Eastville", "Bristol", "", "", "", "", "", "0", "U",
+            "361854", "175047", "-2.5506067921", "51.4730930083", "TMU", "MKD",
+            "OTH", "", "", "", "009", "2016-12-20T16:30:38",
+            "2016-10-31T10:33:04", "4", "new", "act"]
+
+        MetroTubeCommand().process_row(metrotube_row)
+        self.assertEqual(MetroTube.objects.count(), 1)
+
+        metrotube = MetroTube.objects.first()
+        self.assertEqual(metrotube.atco_code, "0100BRP90207")
