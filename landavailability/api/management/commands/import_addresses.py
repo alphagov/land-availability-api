@@ -22,7 +22,7 @@ class Command(CSVImportCommand):
         address.county = row[6]
         address.postcode = row[7].strip().replace(' ', '').upper()
         address.country_code = row[8]
-        address.point = Point(float(row[10]), float(row[9]))
+        address.point = Point(float(row[10]), float(row[9]), srid=4326)
 
         try:
             address.save()
