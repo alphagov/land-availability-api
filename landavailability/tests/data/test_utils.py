@@ -2,7 +2,7 @@ from unittest import TestCase
 import pytest
 from api.models import Address, CodePoint
 from api.management.commands.utils import (
-    get_address_from_postcode, get_codepoint_from_postcode)
+    get_address_from_postcode, get_codepoint_from_postcode, normalise_postcode)
 from django.contrib.gis.geos import Point
 
 
@@ -56,3 +56,7 @@ class TestUtils(TestCase):
     def test_get_codepoint_from_postcode_none(self):
         found_codepoint = get_codepoint_from_postcode('AA111ZZ')
         self.assertIsNone(found_codepoint)
+
+    def test_normalise_postcode(self):
+        postcode = 'AAa b1c'
+        self.assertEqual(normalise_postcode(postcode), 'AAAB1C')
