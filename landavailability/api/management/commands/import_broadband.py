@@ -1,6 +1,7 @@
 from django.contrib.gis.geos import Point
 from api.models import CodePoint, Broadband
 from .importers import CSVImportCommand
+from .utils import get_codepoint_from_postcode
 
 
 class Command(CSVImportCommand):
@@ -20,9 +21,9 @@ class Command(CSVImportCommand):
     def process_row(self, row):
         print(row)
 
-        try:
-            codepoint = CodePoint.objects.get(postcode=row[0])
+        codepoint = get_codepoint_from_postcode(row[0])
 
+        if codepoint:
             try:
                 broadband = Broadband.objects.get(postcode=row[0])
             except Broadband.DoesNotExist:
@@ -43,7 +44,7 @@ class Command(CSVImportCommand):
                 broadband.update_close_locations()
             except Exception as e:
                 print('Could not add: {0}'.format(row))
-        except CodePoint.DoesNotExist:
+        else:
             print(
                 'Could not add: {0} because codepoint information'
                 ' is missing'.format(row))
