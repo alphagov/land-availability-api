@@ -4,3 +4,5 @@ pytest==3.0.4
 pytest-django==3.1.2
 django-extensions==1.7.5
 pyshp==1.2.10
+djangorestframework==3.5.3
+djangorestframework-gis==0.11
