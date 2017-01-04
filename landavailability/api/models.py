@@ -36,7 +36,7 @@ class CodePoint(models.Model):
 class BusStop(models.Model):
     # Describes an instance of a bus stop
 
-    amic_code = models.CharField(db_index=True, max_length=20)
+    amic_code = models.CharField(unique=True, max_length=20)
     point = models.PointField(geography=True, spatial_index=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     direction = models.CharField(max_length=255, blank=True, null=True)

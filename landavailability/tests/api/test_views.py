@@ -22,7 +22,6 @@ class TestBusStopView(APITestCase):
     def test_busstop_view_create_object(self):
         url = reverse('busstop-create')
         data = {
-            "id": 18363,
             "amic_code": "1800AMIC001",
             "point": {
                 "type": "Point",
@@ -37,4 +36,7 @@ class TestBusStopView(APITestCase):
 
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(BusStop.objects.count(), 1)
+
+        response = self.client.post(url, data, format='json')
         self.assertEqual(BusStop.objects.count(), 1)
