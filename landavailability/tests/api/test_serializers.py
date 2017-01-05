@@ -20,7 +20,8 @@ class TestBusStopSerializer(TestCase):
                 "direction": "Nr Train Station",
                 "area": "NA",
                 "road": "STAMFORD NEW RD",
-                "nptg_code": "E0028261"
+                "nptg_code": "E0028261",
+                "srid": 4326
             }
         """
 
