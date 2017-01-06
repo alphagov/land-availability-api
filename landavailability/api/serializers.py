@@ -5,11 +5,15 @@ import json
 
 
 class BusStopSerializer(serializers.ModelSerializer):
+    # this extra field is used to specify the srid geo format
     srid = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = BusStop
         fields = '__all__'
+
+        # We want to handle duplicated entries manually so we remove the
+        # unique validator
         extra_kwargs = {
             'amic_code': {
                 'validators': [],
