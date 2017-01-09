@@ -72,7 +72,7 @@ def busstop_predelete_handler(sender, instance, **kwargs):
 class TrainStop(models.Model):
     # Describes an instance of a train stop
 
-    atcode_code = models.CharField(db_index=True, max_length=24)
+    atcode_code = models.CharField(unique=True, max_length=24)
     naptan_code = models.CharField(max_length=24, blank=True, null=True)
     point = models.PointField(geography=True, spatial_index=True)
     name = models.CharField(max_length=255, blank=True, null=True)

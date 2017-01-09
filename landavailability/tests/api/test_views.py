@@ -6,10 +6,10 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
-from api.models import BusStop
+from api.models import BusStop, TrainStop
 
 
-class TestBusStopView(APITestCase):
+class LandAvailabilityAPITestCase(APITestCase):
     @pytest.mark.django_db
     def setUp(self):
         self.user = User.objects.create_superuser(
@@ -18,6 +18,8 @@ class TestBusStopView(APITestCase):
         self.client = APIClient()
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
 
+
+class TestBusStopView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_busstop_view_create_object(self):
         url = reverse('busstop-create')
@@ -41,3 +43,31 @@ class TestBusStopView(APITestCase):
 
         response = self.client.post(url, data, format='json')
         self.assertEqual(BusStop.objects.count(), 1)
+
+
+class TestTrainStopView(LandAvailabilityAPITestCase):
+    @pytest.mark.django_db
+    def test_trainstop_view_create_object(self):
+        url = reverse('trainstop-create')
+        data = {
+            "atcode_code": "9100ALTRNHM",
+            "naptan_code": "",
+            "point": {
+                "type": "Point",
+                "coordinates": [377008, 387924]
+            },
+            "name": "DATALAND INTERCHANGE",
+            "main_road": "DATALAND NEW RD",
+            "side_road": "DATA LANE",
+            "type": "R",
+            "nptg_code": "E0028261",
+            "local_reference": "AA123ZZ",
+            "srid": 27700
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(TrainStop.objects.count(), 1)
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(TrainStop.objects.count(), 1)
