@@ -8,7 +8,7 @@ from django.dispatch import receiver
 class Address(models.Model):
     # Describes an instance of an address
 
-    uprn = models.CharField(db_index=True, max_length=100)
+    uprn = models.CharField(unique=True, max_length=100)
     address_line_1 = models.CharField(max_length=255, blank=True, null=True)
     address_line_2 = models.CharField(max_length=255, blank=True, null=True)
     address_line_3 = models.CharField(max_length=255, blank=True, null=True)
