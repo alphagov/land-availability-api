@@ -112,7 +112,8 @@ class AddressSerializer(serializers.ModelSerializer):
         address.address_line_3 = validated_data.get('address_line_3')
         address.city = validated_data.get('city')
         address.county = validated_data.get('county')
-        address.postcode = validated_data.get('postcode')
+        address.postcode = validated_data.get(
+            'postcode').strip().replace(' ', '').upper()
         address.country_code = validated_data.get('country_code')
         address.point = GEOSGeometry(
                 validated_data.get('point').geojson,
