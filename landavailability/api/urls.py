@@ -8,4 +8,7 @@ urlpatterns = [
     url(
         r'^trainstop/$',
         views.TrainStopCreateView.as_view(), name='trainstop-create'),
+    url(
+        r'^address/$',
+        views.AddressCreateView.as_view(), name='address-create'),
 ]
