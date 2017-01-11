@@ -146,7 +146,7 @@ class CodePointSerializer(serializers.ModelSerializer):
             codepoint = CodePoint.objects.get(postcode=postcode)
         except CodePoint.DoesNotExist:
             codepoint = CodePoint()
-            codepoint.postcode = validated_data.get('postcode')
+            codepoint.postcode = postcode
 
         codepoint.quality = validated_data.get('quality')
         codepoint.country = validated_data.get('country')
