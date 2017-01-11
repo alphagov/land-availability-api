@@ -1,9 +1,10 @@
 from unittest import TestCase
 import pytest
 import json
-from api.models import BusStop, TrainStop, Address
+from api.models import BusStop, TrainStop, Address, CodePoint
 from api.serializers import (
-    BusStopSerializer, TrainStopSerializer, AddressSerializer)
+    BusStopSerializer, TrainStopSerializer, AddressSerializer,
+    CodePointSerializer)
 
 
 class TestBusStopSerializer(TestCase):
@@ -88,3 +89,32 @@ class TestAddressSerializer(TestCase):
 
         serializer.save()
         self.assertEqual(Address.objects.count(), 1)
+
+
+class TestCodePointSerializer(TestCase):
+    @pytest.mark.django_db
+    def test_codepoint_serializer_create_object(self):
+        json_payload = """
+            {
+                "postcode": "BL0 0AA",
+                "quality": "10",
+                "country": "E92000001",
+                "nhs_region": "E19000001",
+                "nhs_health_authority": "E18000002",
+                "county": "",
+                "district": "E08000002",
+                "ward": "E05000681",
+                "point": {
+                    "type": "Point",
+                    "coordinates": [379448, 416851]
+                },
+                "srid": 27700
+            }
+        """
+
+        data = json.loads(json_payload)
+        serializer = CodePointSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        serializer.save()
+        self.assertEqual(CodePoint.objects.count(), 1)
