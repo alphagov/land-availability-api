@@ -1,4 +1,4 @@
-from .models import BusStop, TrainStop, Address
+from .models import BusStop, TrainStop, Address, CodePoint
 from rest_framework import serializers
 from django.contrib.gis.geos import GEOSGeometry
 import json
@@ -121,3 +121,44 @@ class AddressSerializer(serializers.ModelSerializer):
 
         address.save()
         return address
+
+
+class CodePointSerializer(serializers.ModelSerializer):
+    # this extra field is used to specify the srid geo format
+    srid = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = CodePoint
+        fields = '__all__'
+
+        # We want to handle duplicated entries manually so we remove the
+        # unique validator
+        extra_kwargs = {
+            'postcode': {
+                'validators': [],
+            }
+        }
+
+    def create(self, validated_data):
+        postcode = validated_data['postcode'].strip().replace(' ', '').upper()
+
+        try:
+            codepoint = CodePoint.objects.get(postcode=postcode)
+        except CodePoint.DoesNotExist:
+            codepoint = CodePoint()
+            codepoint.postcode = postcode
+
+        codepoint.quality = validated_data.get('quality')
+        codepoint.country = validated_data.get('country')
+        codepoint.nhs_region = validated_data.get('nhs_region')
+        codepoint.nhs_health_authority = validated_data.get(
+            'nhs_health_authority')
+        codepoint.county = validated_data.get('county')
+        codepoint.district = validated_data.get('district')
+        codepoint.ward = validated_data.get('ward')
+        codepoint.point = GEOSGeometry(
+                validated_data.get('point').geojson,
+                srid=validated_data.get('srid'))
+
+        codepoint.save()
+        return codepoint

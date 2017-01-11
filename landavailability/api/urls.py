@@ -11,4 +11,7 @@ urlpatterns = [
     url(
         r'^address/$',
         views.AddressCreateView.as_view(), name='address-create'),
+    url(
+        r'^codepoint/$',
+        views.CodePointCreateView.as_view(), name='codepoint-create'),
 ]

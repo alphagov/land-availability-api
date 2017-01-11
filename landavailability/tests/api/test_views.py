@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
-from api.models import BusStop, TrainStop, Address
+from api.models import BusStop, TrainStop, Address, CodePoint
 
 
 class LandAvailabilityAPITestCase(APITestCase):
@@ -98,3 +98,31 @@ class TestAddressView(LandAvailabilityAPITestCase):
 
         response = self.client.post(url, data, format='json')
         self.assertEqual(Address.objects.count(), 1)
+
+
+class TestCodePointView(LandAvailabilityAPITestCase):
+    @pytest.mark.django_db
+    def test_codepoint_view_create_object(self):
+        url = reverse('codepoint-create')
+        data = {
+                "postcode": "BL0 0AA",
+                "quality": "10",
+                "country": "E92000001",
+                "nhs_region": "E19000001",
+                "nhs_health_authority": "E18000002",
+                "county": "",
+                "district": "E08000002",
+                "ward": "E05000681",
+                "point": {
+                    "type": "Point",
+                    "coordinates": [379448, 416851]
+                },
+                "srid": 27700
+            }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(CodePoint.objects.count(), 1)
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(CodePoint.objects.count(), 1)

@@ -22,15 +22,16 @@ class Address(models.Model):
 class CodePoint(models.Model):
     # Describes an instance of a Code Point
 
-    postcode = models.CharField(db_index=True, max_length=20)
-    quality = models.IntegerField()
+    postcode = models.CharField(unique=True, max_length=20)
+    quality = models.IntegerField(null=True)
     point = models.PointField(geography=True, spatial_index=True)
-    country = models.CharField(db_index=True, max_length=24)
-    nhs_region = models.CharField(db_index=True, max_length=24)
-    nhs_health_authority = models.CharField(db_index=True, max_length=24)
-    county = models.CharField(db_index=True, max_length=24)
-    district = models.CharField(db_index=True, max_length=24)
-    ward = models.CharField(db_index=True, max_length=24)
+    country = models.CharField(null=True, blank=True, max_length=24)
+    nhs_region = models.CharField(null=True, blank=True, max_length=24)
+    nhs_health_authority = models.CharField(
+        null=True, blank=True, max_length=24)
+    county = models.CharField(null=True, blank=True, max_length=24)
+    district = models.CharField(null=True, blank=True, max_length=24)
+    ward = models.CharField(null=True, blank=True, max_length=24)
 
 
 class BusStop(models.Model):
