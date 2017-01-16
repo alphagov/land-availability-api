@@ -1,4 +1,4 @@
-from .models import BusStop, TrainStop, Address, CodePoint
+from .models import BusStop, TrainStop, Address, CodePoint, Broadband
 from rest_framework import serializers
 from django.contrib.gis.geos import GEOSGeometry
 import json
@@ -162,3 +162,53 @@ class CodePointSerializer(serializers.ModelSerializer):
 
         codepoint.save()
         return codepoint
+
+
+class BroadbandSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Broadband
+        exclude = ('point',)
+
+        # We want to handle duplicated entries manually so we remove the
+        # unique validator
+        extra_kwargs = {
+            'postcode': {
+                'validators': [],
+            }
+        }
+
+    def validate(self, data):
+        postcode = data['postcode'].strip().replace(' ', '').upper()
+
+        try:
+            codepoint = CodePoint.objects.get(postcode=postcode)
+        except CodePoint.DoesNotExist:
+            raise serializers.ValidationError(
+                "Given postcode does not exist in CodePoint")
+
+        data['postcode'] = postcode
+        return data
+
+    def create(self, validated_data):
+        postcode = validated_data['postcode']
+        codepoint = CodePoint.objects.get(postcode=postcode)
+
+        try:
+            broadband = Broadband.objects.get(postcode=postcode)
+        except Broadband.DoesNotExist:
+            broadband = Broadband()
+            broadband.postcode = postcode
+
+        broadband.speed_30_mb_percentage = validated_data.get(
+            'speed_30_mb_percentage')
+        broadband.min_download_speed = validated_data.get('min_download_speed')
+        broadband.avg_download_speed = validated_data.get('avg_download_speed')
+        broadband.max_download_speed = validated_data.get('max_download_speed')
+        broadband.min_upload_speed = validated_data.get('min_upload_speed')
+        broadband.avg_upload_speed = validated_data.get('avg_upload_speed')
+        broadband.max_upload_speed = validated_data.get('max_upload_speed')
+        broadband.point = codepoint.point
+
+        broadband.save()
+        return broadband
