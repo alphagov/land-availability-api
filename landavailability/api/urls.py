@@ -14,4 +14,7 @@ urlpatterns = [
     url(
         r'^codepoint/$',
         views.CodePointCreateView.as_view(), name='codepoint-create'),
+    url(
+        r'^broadband/$',
+        views.BroadbandCreateView.as_view(), name='broadband-create'),
 ]

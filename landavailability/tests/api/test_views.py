@@ -2,11 +2,12 @@ from unittest import TestCase
 import pytest
 from django.urls import reverse
 from django.contrib.auth.models import User
+from django.contrib.gis.geos import Point
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
-from api.models import BusStop, TrainStop, Address, CodePoint
+from api.models import BusStop, TrainStop, Address, CodePoint, Broadband
 
 
 class LandAvailabilityAPITestCase(APITestCase):
@@ -126,3 +127,34 @@ class TestCodePointView(LandAvailabilityAPITestCase):
 
         response = self.client.post(url, data, format='json')
         self.assertEqual(CodePoint.objects.count(), 1)
+
+
+class TestBroadbandView(LandAvailabilityAPITestCase):
+    @pytest.mark.django_db
+    def test_broadband_view_create_object(self):
+        # Prepare a CodePoint
+        codepoint = CodePoint()
+        codepoint.postcode = 'ME58TL'
+        codepoint.point = Point(
+            float("-1.83356713993623"), float("55.4168769443259"))
+        codepoint.quality = 10
+        codepoint.save()
+
+        url = reverse('broadband-create')
+        data = {
+            "postcode": "ME5 8TL",
+            "speed_30_mb_percentage": 50,
+            "avg_download_speed": 10.5,
+            "min_download_speed": 2.8,
+            "max_download_speed": 12.3,
+            "avg_upload_speed": 0.5,
+            "min_upload_speed": 0.3,
+            "max_upload_speed": 1.1
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Broadband.objects.count(), 1)
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(Broadband.objects.count(), 1)
