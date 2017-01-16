@@ -218,7 +218,7 @@ def motorway_predelete_handler(sender, instance, **kwargs):
 class Broadband(models.Model):
     # Describes an instance of Broadband
 
-    postcode = models.CharField(db_index=True, max_length=255)
+    postcode = models.CharField(unique=True, max_length=255)
     point = models.PointField(geography=True, spatial_index=True)
     speed_30_mb_percentage = models.DecimalField(
         max_digits=5, decimal_places=2, null=True)
