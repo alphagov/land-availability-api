@@ -1,10 +1,11 @@
 from unittest import TestCase
 import pytest
 import json
-from api.models import BusStop, TrainStop, Address, CodePoint
+from django.contrib.gis.geos import Point
+from api.models import BusStop, TrainStop, Address, CodePoint, Broadband
 from api.serializers import (
     BusStopSerializer, TrainStopSerializer, AddressSerializer,
-    CodePointSerializer)
+    CodePointSerializer, BroadbandSerializer)
 
 
 class TestBusStopSerializer(TestCase):
@@ -118,3 +119,54 @@ class TestCodePointSerializer(TestCase):
 
         serializer.save()
         self.assertEqual(CodePoint.objects.count(), 1)
+
+
+class TestBroadbandSerializer(TestCase):
+    @pytest.mark.django_db
+    def test_broadband_serializer_create_object(self):
+        # Prepare a CodePoint
+        codepoint = CodePoint()
+        codepoint.postcode = 'ME58TL'
+        codepoint.point = Point(
+            float("-1.83356713993623"), float("55.4168769443259"))
+        codepoint.quality = 10
+        codepoint.save()
+
+        json_payload = """
+            {
+                "postcode": "ME5 8TL",
+                "speed_30_mb_percentage": 50,
+                "avg_download_speed": 10.5,
+                "min_download_speed": 2.8,
+                "max_download_speed": 12.3,
+                "avg_upload_speed": 0.5,
+                "min_upload_speed": 0.3,
+                "max_upload_speed": 1.1
+            }
+        """
+
+        data = json.loads(json_payload)
+        serializer = BroadbandSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        serializer.save()
+        self.assertEqual(Broadband.objects.count(), 1)
+
+    @pytest.mark.django_db
+    def test_broadband_invalid_serializer_no_codepoint(self):
+        json_payload = """
+            {
+                "postcode": "ME5 8TL",
+                "speed_30_mb_percentage": 50,
+                "avg_download_speed": 10.5,
+                "min_download_speed": 2.8,
+                "max_download_speed": 12.3,
+                "avg_upload_speed": 0.5,
+                "min_upload_speed": 0.3,
+                "max_upload_speed": 1.1
+            }
+        """
+
+        data = json.loads(json_payload)
+        serializer = BroadbandSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
