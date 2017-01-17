@@ -20,4 +20,7 @@ urlpatterns = [
     url(
         r'^metrotube/$',
         views.MetroTubeCreateView.as_view(), name='metrotube-create'),
+    url(
+        r'^greenbelt/$',
+        views.GreenbeltCreateView.as_view(), name='greenbelt-create'),
 ]

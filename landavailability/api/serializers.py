@@ -1,5 +1,5 @@
 from .models import (
-    BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube)
+    BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt)
 from rest_framework import serializers
 from django.contrib.gis.geos import GEOSGeometry
 import json
@@ -249,3 +249,42 @@ class MetroTubeSerializer(serializers.ModelSerializer):
 
         metrotube.save()
         return metrotube
+
+
+class GreenbeltSerializer(serializers.ModelSerializer):
+    # this extra field is used to specify the srid geo format
+    srid = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = Greenbelt
+        fields = '__all__'
+
+        # We want to handle duplicated entries manually so we remove the
+        # unique validator
+        extra_kwargs = {
+            'code': {
+                'validators': [],
+            }
+        }
+
+    def create(self, validated_data):
+        code = validated_data['code']
+
+        try:
+            greenbelt = Greenbelt.objects.get(code=code)
+        except Greenbelt.DoesNotExist:
+            greenbelt = Greenbelt()
+            greenbelt.code = code
+
+        greenbelt.geom = GEOSGeometry(
+                validated_data.get('geom').geojson,
+                srid=validated_data.get('srid'))
+        greenbelt.la_name = validated_data.get('la_name')
+        greenbelt.gb_name = validated_data.get('gb_name')
+        greenbelt.ons_code = validated_data.get('ons_code')
+        greenbelt.year = validated_data.get('year')
+        greenbelt.area = validated_data.get('area')
+        greenbelt.perimeter = validated_data.get('perimeter')
+
+        greenbelt.save()
+        return greenbelt
