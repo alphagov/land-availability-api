@@ -270,7 +270,7 @@ def broadband_predelete_handler(sender, instance, **kwargs):
 class Greenbelt(models.Model):
     # Describes an instance of a greenbelt
 
-    code = models.CharField(db_index=True, max_length=255)
+    code = models.CharField(unique=True, max_length=255)
     la_name = models.CharField(max_length=255, blank=True, null=True)
     gb_name = models.CharField(max_length=255, blank=True, null=True)
     ons_code = models.CharField(max_length=255, blank=True, null=True)
