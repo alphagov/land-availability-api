@@ -3,10 +3,11 @@ import pytest
 import json
 from django.contrib.gis.geos import Point
 from api.models import (
-    BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube)
+    BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt)
 from api.serializers import (
     BusStopSerializer, TrainStopSerializer, AddressSerializer,
-    CodePointSerializer, BroadbandSerializer, MetroTubeSerializer)
+    CodePointSerializer, BroadbandSerializer, MetroTubeSerializer,
+    GreenbeltSerializer)
 
 
 class TestBusStopSerializer(TestCase):
@@ -196,3 +197,106 @@ class TestMetroTubeSerializer(TestCase):
 
         serializer.save()
         self.assertEqual(MetroTube.objects.count(), 1)
+
+
+class TestGreenbeltSerializer(TestCase):
+    @pytest.mark.django_db
+    def test_greenbelt_serializer_create_object(self):
+        json_payload = """
+            {
+                "code": "Local_Authority_green_belt_boundaries_2014-15.25",
+                "la_name": "City of Stoke-on-Trent (B)",
+                "gb_name": "Stoke Greenbelt",
+                "ons_code": "E06000021",
+                "year": "2014/15",
+                "area": 50.1,
+                "perimeter": 120.23,
+                "geom": {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                    [
+                        [
+                        [
+                            -2.1614837256814963,
+                            53.07183331520438,
+                            0
+                        ],
+                        [
+                            -2.161440204004493,
+                            53.07167876512527,
+                            0
+                        ],
+                        [
+                            -2.161426422046515,
+                            53.07158231050548,
+                            0
+                        ],
+                        [
+                            -2.161412261861244,
+                            53.07128283205548,
+                            0
+                        ],
+                        [
+                            -2.161373377871479,
+                            53.071211109880664,
+                            0
+                        ],
+                        [
+                            -2.161369504865456,
+                            53.07118401041043,
+                            0
+                        ],
+                        [
+                            -2.1617677327485008,
+                            53.07111245525075,
+                            0
+                        ],
+                        [
+                            -2.1617682739467705,
+                            53.071109120469266,
+                            0
+                        ],
+                        [
+                            -2.1620568237599738,
+                            53.07147709017702,
+                            0
+                        ],
+                        [
+                            -2.162246918923053,
+                            53.07170561414385,
+                            0
+                        ],
+                        [
+                            -2.162193868651531,
+                            53.07171503969784,
+                            0
+                        ],
+                        [
+                            -2.162142294698858,
+                            53.07172373689699,
+                            0
+                        ],
+                        [
+                            -2.1621361236605248,
+                            53.07171871503741,
+                            0
+                        ],
+                        [
+                            -2.1614837256814963,
+                            53.07183331520438,
+                            0
+                        ]
+                        ]
+                    ]
+                    ]
+                },
+                "srid": 4326
+            }
+        """
+
+        data = json.loads(json_payload)
+        serializer = GreenbeltSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        serializer.save()
+        self.assertEqual(Greenbelt.objects.count(), 1)
