@@ -17,4 +17,7 @@ urlpatterns = [
     url(
         r'^broadband/$',
         views.BroadbandCreateView.as_view(), name='broadband-create'),
+    url(
+        r'^metrotube/$',
+        views.MetroTubeCreateView.as_view(), name='metrotube-create'),
 ]

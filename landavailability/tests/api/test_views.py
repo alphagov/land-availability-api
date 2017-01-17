@@ -7,7 +7,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
-from api.models import BusStop, TrainStop, Address, CodePoint, Broadband
+from api.models import (
+    BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube)
 
 
 class LandAvailabilityAPITestCase(APITestCase):
@@ -158,3 +159,27 @@ class TestBroadbandView(LandAvailabilityAPITestCase):
 
         response = self.client.post(url, data, format='json')
         self.assertEqual(Broadband.objects.count(), 1)
+
+
+class TestMetroTubeView(LandAvailabilityAPITestCase):
+    @pytest.mark.django_db
+    def test_metrotube_view_create_object(self):
+        url = reverse('metrotube-create')
+        data = {
+            "atco_code": "1800AMIC001",
+            "name": "Altrincham Interchange",
+            "naptan_code": "bsstnxl",
+            "locality": "",
+            "point": {
+                "type": "Point",
+                "coordinates": [-2.347743000012108, 53.38737090322739]
+            },
+            "srid": 4326
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(MetroTube.objects.count(), 1)
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(MetroTube.objects.count(), 1)
