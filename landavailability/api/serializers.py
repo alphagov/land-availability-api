@@ -1,4 +1,5 @@
-from .models import BusStop, TrainStop, Address, CodePoint, Broadband
+from .models import (
+    BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube)
 from rest_framework import serializers
 from django.contrib.gis.geos import GEOSGeometry
 import json
@@ -212,3 +213,39 @@ class BroadbandSerializer(serializers.ModelSerializer):
 
         broadband.save()
         return broadband
+
+
+class MetroTubeSerializer(serializers.ModelSerializer):
+    # this extra field is used to specify the srid geo format
+    srid = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = MetroTube
+        fields = '__all__'
+
+        # We want to handle duplicated entries manually so we remove the
+        # unique validator
+        extra_kwargs = {
+            'atco_code': {
+                'validators': [],
+            }
+        }
+
+    def create(self, validated_data):
+        atco_code = validated_data['atco_code']
+
+        try:
+            metrotube = MetroTube.objects.get(atco_code=atco_code)
+        except MetroTube.DoesNotExist:
+            metrotube = MetroTube()
+            metrotube.atco_code = atco_code
+
+        metrotube.naptan_code = validated_data.get('naptan_code')
+        metrotube.name = validated_data.get('name')
+        metrotube.locality = validated_data.get('locality')
+        metrotube.point = GEOSGeometry(
+                validated_data.get('point').geojson,
+                srid=validated_data.get('srid'))
+
+        metrotube.save()
+        return metrotube

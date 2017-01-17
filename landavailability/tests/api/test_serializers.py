@@ -2,10 +2,11 @@ from unittest import TestCase
 import pytest
 import json
 from django.contrib.gis.geos import Point
-from api.models import BusStop, TrainStop, Address, CodePoint, Broadband
+from api.models import (
+    BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube)
 from api.serializers import (
     BusStopSerializer, TrainStopSerializer, AddressSerializer,
-    CodePointSerializer, BroadbandSerializer)
+    CodePointSerializer, BroadbandSerializer, MetroTubeSerializer)
 
 
 class TestBusStopSerializer(TestCase):
@@ -170,3 +171,28 @@ class TestBroadbandSerializer(TestCase):
         data = json.loads(json_payload)
         serializer = BroadbandSerializer(data=data)
         self.assertFalse(serializer.is_valid())
+
+
+class TestMetroTubeSerializer(TestCase):
+    @pytest.mark.django_db
+    def test_metrotube_serializer_create_object(self):
+        json_payload = """
+            {
+                "atco_code": "1800AMIC001",
+                "name": "Altrincham Interchange",
+                "naptan_code": "bsstnxl",
+                "locality": "",
+                "point": {
+                    "type": "Point",
+                    "coordinates": [-2.347743000012108,53.38737090322739]
+                },
+                "srid": 4326
+            }
+        """
+
+        data = json.loads(json_payload)
+        serializer = MetroTubeSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        serializer.save()
+        self.assertEqual(MetroTube.objects.count(), 1)
