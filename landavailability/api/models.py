@@ -348,7 +348,7 @@ def school_predelete_handler(sender, instance, **kwargs):
 class MetroTube(models.Model):
     # Describes an instance of a Metro or a Tube stop
 
-    atco_code = models.CharField(db_index=True, max_length=255)
+    atco_code = models.CharField(unique=True, max_length=255)
     naptan_code = models.CharField(db_index=True, max_length=255)
     name = models.CharField(max_length=255, blank=True, null=True)
     locality = models.CharField(max_length=255, blank=True, null=True)
