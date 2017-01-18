@@ -8,7 +8,8 @@ from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 from api.models import (
-    BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt)
+    BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
+    Motorway)
 
 
 class LandAvailabilityAPITestCase(APITestCase):
@@ -285,3 +286,25 @@ class TestGreenbeltView(LandAvailabilityAPITestCase):
 
         response = self.client.post(url, data, format='json')
         self.assertEqual(Greenbelt.objects.count(), 1)
+
+
+class TestMotorwayView(LandAvailabilityAPITestCase):
+    @pytest.mark.django_db
+    def test_motorway_view_create_object(self):
+        url = reverse('motorway-create')
+        data = {
+            "identifier": "1800AMIC001",
+            "number": "M58",
+            "point": {
+                "type": "Point",
+                "coordinates": [-2.347743000012108, 53.38737090322739]
+            },
+            "srid": 4326
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Motorway.objects.count(), 1)
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(Motorway.objects.count(), 1)
