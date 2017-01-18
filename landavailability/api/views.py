@@ -5,11 +5,11 @@ from rest_framework import status
 from rest_framework.permissions import IsAdminUser
 from .models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
-    Motorway)
+    Motorway, Substation)
 from .serializers import (
     BusStopSerializer, TrainStopSerializer, AddressSerializer,
     CodePointSerializer, BroadbandSerializer, MetroTubeSerializer,
-    GreenbeltSerializer, MotorwaySerializer)
+    GreenbeltSerializer, MotorwaySerializer, SubstationSerializer)
 from django.contrib.gis.geos import GEOSGeometry
 
 
@@ -123,6 +123,21 @@ class MotorwayCreateView(APIView):
         if serializer.is_valid():
             motorway = serializer.save()
             motorway.update_close_locations()
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubstationCreateView(APIView):
+    permission_classes = (IsAdminUser, )
+
+    def post(self, request, format=None):
+        serializer = SubstationSerializer(data=request.data)
+
+        if serializer.is_valid():
+            substation = serializer.save()
+            substation.update_close_locations()
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
