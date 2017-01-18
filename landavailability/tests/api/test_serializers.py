@@ -3,11 +3,12 @@ import pytest
 import json
 from django.contrib.gis.geos import Point
 from api.models import (
-    BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt)
+    BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
+    Motorway)
 from api.serializers import (
     BusStopSerializer, TrainStopSerializer, AddressSerializer,
     CodePointSerializer, BroadbandSerializer, MetroTubeSerializer,
-    GreenbeltSerializer)
+    GreenbeltSerializer, MotorwaySerializer)
 
 
 class TestBusStopSerializer(TestCase):
@@ -300,3 +301,26 @@ class TestGreenbeltSerializer(TestCase):
 
         serializer.save()
         self.assertEqual(Greenbelt.objects.count(), 1)
+
+
+class TestMotorwaySerializer(TestCase):
+    @pytest.mark.django_db
+    def test_motorway_serializer_create_object(self):
+        json_payload = """
+            {
+                "identifier": "1800AMIC001",
+                "number": "M58",
+                "point": {
+                    "type": "Point",
+                    "coordinates": [-2.347743000012108, 53.38737090322739]
+                },
+                "srid": 4326
+            }
+        """
+
+        data = json.loads(json_payload)
+        serializer = MotorwaySerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        serializer.save()
+        self.assertEqual(Motorway.objects.count(), 1)

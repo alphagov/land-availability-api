@@ -1,5 +1,6 @@
 from .models import (
-    BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt)
+    BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
+    Motorway)
 from rest_framework import serializers
 from django.contrib.gis.geos import GEOSGeometry
 import json
@@ -288,3 +289,37 @@ class GreenbeltSerializer(serializers.ModelSerializer):
 
         greenbelt.save()
         return greenbelt
+
+
+class MotorwaySerializer(serializers.ModelSerializer):
+    # this extra field is used to specify the srid geo format
+    srid = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = Motorway
+        fields = '__all__'
+
+        # We want to handle duplicated entries manually so we remove the
+        # unique validator
+        extra_kwargs = {
+            'identifier': {
+                'validators': [],
+            }
+        }
+
+    def create(self, validated_data):
+        identifier = validated_data['identifier']
+
+        try:
+            motorway = Motorway.objects.get(identifier=identifier)
+        except Motorway.DoesNotExist:
+            motorway = Motorway()
+            motorway.identifier = identifier
+
+        motorway.number = validated_data.get('number')
+        motorway.point = GEOSGeometry(
+                validated_data.get('point').geojson,
+                srid=validated_data.get('srid'))
+
+        motorway.save()
+        return motorway

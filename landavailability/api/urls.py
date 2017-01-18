@@ -23,4 +23,7 @@ urlpatterns = [
     url(
         r'^greenbelt/$',
         views.GreenbeltCreateView.as_view(), name='greenbelt-create'),
+    url(
+        r'^motorway/$',
+        views.MotorwayCreateView.as_view(), name='motorway-create'),
 ]
