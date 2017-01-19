@@ -9,7 +9,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 from api.models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
-    Motorway, Substation, OverheadLine)
+    Motorway, Substation, OverheadLine, School)
 
 
 class LandAvailabilityAPITestCase(APITestCase):
@@ -396,3 +396,30 @@ class TestOverheadLineView(LandAvailabilityAPITestCase):
 
         response = self.client.post(url, data, format='json')
         self.assertEqual(OverheadLine.objects.count(), 1)
+
+
+class TestSchoolView(LandAvailabilityAPITestCase):
+    @pytest.mark.django_db
+    def test_school_view_create_object(self):
+        url = reverse('school-create')
+        data = {
+            "urn": "100000",
+            "la_name": "School Sample",
+            "school_name": "School",
+            "school_type": "Primary",
+            "school_capacity": "300",
+            "school_pupils": "280",
+            "postcode": "EC3A 5DE",
+            "point": {
+                "type": "Point",
+                "coordinates": [533498, 181201]
+            },
+            "srid": 27700
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(School.objects.count(), 1)
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(School.objects.count(), 1)
