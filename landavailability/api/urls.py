@@ -32,4 +32,7 @@ urlpatterns = [
     url(
         r'^overheadline/$',
         views.OverheadLineCreateView.as_view(), name='overheadline-create'),
+    url(
+        r'^school/$',
+        views.SchoolCreateView.as_view(), name='school-create'),
 ]

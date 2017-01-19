@@ -309,7 +309,7 @@ def greenbelt_predelete_handler(sender, instance, **kwargs):
 class School(models.Model):
     # Describes an instance of a School
 
-    urn = models.CharField(db_index=True, max_length=255)
+    urn = models.CharField(unique=True, max_length=255)
     la_name = models.CharField(max_length=255, blank=True, null=True)
     school_name = models.CharField(max_length=255, blank=True, null=True)
     school_type = models.CharField(max_length=255, blank=True, null=True)
