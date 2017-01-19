@@ -1,6 +1,6 @@
 from .models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
-    Motorway, Substation)
+    Motorway, Substation, OverheadLine)
 from rest_framework import serializers
 from django.contrib.gis.geos import GEOSGeometry
 import json
@@ -362,3 +362,43 @@ class SubstationSerializer(serializers.ModelSerializer):
 
         substation.save()
         return substation
+
+
+class OverheadLineSerializer(serializers.ModelSerializer):
+    # this extra field is used to specify the srid geo format
+    srid = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = OverheadLine
+        fields = '__all__'
+
+        # We want to handle duplicated entries manually so we remove the
+        # unique validator
+        extra_kwargs = {
+            'gdo_gid': {
+                'validators': [],
+            }
+        }
+
+    def create(self, validated_data):
+        gdo_gid = validated_data['gdo_gid']
+
+        try:
+            overheadline = OverheadLine.objects.get(gdo_gid=gdo_gid)
+        except OverheadLine.DoesNotExist:
+            overheadline = OverheadLine()
+            overheadline.gdo_gid = gdo_gid
+
+        overheadline.route_asset = validated_data.get('route_asset')
+        overheadline.towers = validated_data.get('towers')
+        overheadline.action_dtt = validated_data.get('action_dtt')
+        overheadline.status = validated_data.get('status')
+        overheadline.operating = validated_data.get('operating')
+        overheadline.circuit_1 = validated_data.get('circuit_1')
+        overheadline.circuit_2 = validated_data.get('circuit_2')
+        overheadline.geom = GEOSGeometry(
+                validated_data.get('geom').geojson,
+                srid=validated_data.get('srid'))
+
+        overheadline.save()
+        return overheadline

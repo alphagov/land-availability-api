@@ -9,7 +9,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 from api.models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
-    Motorway, Substation)
+    Motorway, Substation, OverheadLine)
 
 
 class LandAvailabilityAPITestCase(APITestCase):
@@ -343,3 +343,56 @@ class TestSubstationView(LandAvailabilityAPITestCase):
 
         response = self.client.post(url, data, format='json')
         self.assertEqual(Substation.objects.count(), 1)
+
+
+class TestOverheadLineView(LandAvailabilityAPITestCase):
+    @pytest.mark.django_db
+    def test_overheadline_view_create_object(self):
+        url = reverse('overheadline-create')
+        data = {
+            "gdo_gid": "43166",
+            "route_asset": "YYE",
+            "towers": "YYE ROUTE TWR (001 - 023 - ZF134B)",
+            "action_dtt": "20140714",
+            "status": "C",
+            "operating": "275",
+            "circuit_1": "BERKSWELL - FECKENHAM",
+            "circuit_2": "BERKSWELL - OCKER HILL",
+            "geom": {
+                "coordinates":
+                    [
+                        [-1.7162378414130184, 52.39509813723668],
+                        [-1.7118087047460224, 52.39445334104352],
+                        [-1.7069444136941159, 52.39381157847583],
+                        [-1.7012910833623787, 52.39304704079583],
+                        [-1.6974465258080322, 52.39163987225863],
+                        [-1.6927458315081603, 52.389897117451085],
+                        [-1.6880263699584392, 52.38818563270853],
+                        [-1.6837766072452327, 52.386592086779146],
+                        [-1.6794755043949512, 52.38495278375084],
+                        [-1.6750111100750937, 52.3837364391955],
+                        [-1.6689556202008984, 52.38208344308663],
+                        [-1.6642786485153964, 52.38081164222021],
+                        [-1.6592208948258016, 52.379421687420404],
+                        [-1.6539729824641247, 52.377968028322485],
+                        [-1.6496342378207944, 52.37675956612751],
+                        [-1.6456303432964996, 52.37595650500795],
+                        [-1.6387809762869334, 52.37465019373085],
+                        [-1.634791788997145, 52.37389176044164],
+                        [-1.6315921288927824, 52.37535622518402],
+                        [-1.626696153184927, 52.377624376547374],
+                        [-1.623333981654566, 52.379133055316025],
+                        [-1.6197350635873287, 52.380811690549756],
+                        [-1.6161362623497628, 52.382445265672246],
+                        [-1.61410115397588, 52.3850098287682]],
+                "type": "LineString"
+            },
+            "srid": 4326
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(OverheadLine.objects.count(), 1)
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(OverheadLine.objects.count(), 1)
