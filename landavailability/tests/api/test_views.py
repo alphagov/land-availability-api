@@ -9,7 +9,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 from api.models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
-    Motorway)
+    Motorway, Substation)
 
 
 class LandAvailabilityAPITestCase(APITestCase):
@@ -308,3 +308,38 @@ class TestMotorwayView(LandAvailabilityAPITestCase):
 
         response = self.client.post(url, data, format='json')
         self.assertEqual(Motorway.objects.count(), 1)
+
+
+class TestSubstationView(LandAvailabilityAPITestCase):
+    @pytest.mark.django_db
+    def test_substation_view_create_object(self):
+        url = reverse('substation-create')
+        data = {
+            "name": "BICF4",
+            "operating": "400kV",
+            "action_dtt": "20130514",
+            "status": "C",
+            "description": "BICKER FEN 400KV SUBSTATION",
+            "owner_flag": "Y",
+            "gdo_gid": "259039",
+            "geom": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [-0.22341515058230163, 52.93036769987315],
+                        [-0.22039561538021543, 52.93215130879717],
+                        [-0.21891135174799967, 52.93122765287705],
+                        [-0.22193998154995934, 52.92945074233686],
+                        [-0.22341515058230163, 52.93036769987315]
+                    ]
+                ]
+            },
+            "srid": 4326
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Substation.objects.count(), 1)
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(Substation.objects.count(), 1)
