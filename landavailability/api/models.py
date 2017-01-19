@@ -148,7 +148,7 @@ def substation_predelete_handler(sender, instance, **kwargs):
 class OverheadLine(models.Model):
     # Describe an instance of Overhead Line
 
-    gdo_gid = models.CharField(db_index=True, max_length=255)
+    gdo_gid = models.CharField(unique=True, max_length=255)
     route_asset = models.CharField(max_length=255, blank=True, null=True)
     towers = models.CharField(max_length=255, blank=True, null=True)
     action_dtt = models.CharField(max_length=255, blank=True, null=True)
