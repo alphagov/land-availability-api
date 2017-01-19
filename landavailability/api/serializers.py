@@ -1,6 +1,6 @@
 from .models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
-    Motorway, Substation, OverheadLine)
+    Motorway, Substation, OverheadLine, School)
 from rest_framework import serializers
 from django.contrib.gis.geos import GEOSGeometry
 import json
@@ -402,3 +402,42 @@ class OverheadLineSerializer(serializers.ModelSerializer):
 
         overheadline.save()
         return overheadline
+
+
+class SchoolSerializer(serializers.ModelSerializer):
+    # this extra field is used to specify the srid geo format
+    srid = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = School
+        fields = '__all__'
+
+        # We want to handle duplicated entries manually so we remove the
+        # unique validator
+        extra_kwargs = {
+            'urn': {
+                'validators': [],
+            }
+        }
+
+    def create(self, validated_data):
+        urn = validated_data['urn']
+
+        try:
+            school = School.objects.get(urn=urn)
+        except School.DoesNotExist:
+            school = School()
+            school.urn = urn
+
+        school.la_name = validated_data.get('la_name')
+        school.school_name = validated_data.get('school_name')
+        school.school_type = validated_data.get('school_type')
+        school.school_capacity = validated_data.get('school_capacity')
+        school.school_pupils = validated_data.get('school_capacity')
+        school.postcode = validated_data.get('postcode')
+        school.point = GEOSGeometry(
+                validated_data.get('point').geojson,
+                srid=validated_data.get('srid'))
+
+        school.save()
+        return school

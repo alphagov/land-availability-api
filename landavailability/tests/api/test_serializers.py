@@ -4,12 +4,12 @@ import json
 from django.contrib.gis.geos import Point
 from api.models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
-    Motorway, Substation, OverheadLine)
+    Motorway, Substation, OverheadLine, School)
 from api.serializers import (
     BusStopSerializer, TrainStopSerializer, AddressSerializer,
     CodePointSerializer, BroadbandSerializer, MetroTubeSerializer,
     GreenbeltSerializer, MotorwaySerializer, SubstationSerializer,
-    OverheadLineSerializer)
+    OverheadLineSerializer, SchoolSerializer)
 
 
 class TestBusStopSerializer(TestCase):
@@ -415,3 +415,31 @@ class TestOverheadLineSerializer(TestCase):
 
         serializer.save()
         self.assertEqual(OverheadLine.objects.count(), 1)
+
+
+class TestSchoolSerializer(TestCase):
+    @pytest.mark.django_db
+    def test_school_serializer_create_object(self):
+        json_payload = """
+            {
+                "urn": "100000",
+                "la_name": "School Sample",
+                "school_name": "School",
+                "school_type": "Primary",
+                "school_capacity": "300",
+                "school_pupils": "280",
+                "postcode": "EC3A 5DE",
+                "point": {
+                    "type": "Point",
+                    "coordinates": [533498, 181201]
+                },
+                "srid": 27700
+            }
+        """
+
+        data = json.loads(json_payload)
+        serializer = SchoolSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        serializer.save()
+        self.assertEqual(School.objects.count(), 1)
