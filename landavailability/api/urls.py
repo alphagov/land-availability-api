@@ -29,4 +29,7 @@ urlpatterns = [
     url(
         r'^substation/$',
         views.SubstationCreateView.as_view(), name='substation-create'),
+    url(
+        r'^overheadline/$',
+        views.OverheadLineCreateView.as_view(), name='overheadline-create'),
 ]
