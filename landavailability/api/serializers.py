@@ -1,6 +1,6 @@
 from .models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
-    Motorway)
+    Motorway, Substation)
 from rest_framework import serializers
 from django.contrib.gis.geos import GEOSGeometry
 import json
@@ -323,3 +323,42 @@ class MotorwaySerializer(serializers.ModelSerializer):
 
         motorway.save()
         return motorway
+
+
+class SubstationSerializer(serializers.ModelSerializer):
+    # this extra field is used to specify the srid geo format
+    srid = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = Substation
+        fields = '__all__'
+
+        # We want to handle duplicated entries manually so we remove the
+        # unique validator
+        extra_kwargs = {
+            'name': {
+                'validators': [],
+            }
+        }
+
+    def create(self, validated_data):
+        name = validated_data['name']
+
+        try:
+            substation = Substation.objects.get(name=name)
+        except Substation.DoesNotExist:
+            substation = Substation()
+            substation.name = name
+
+        substation.operating = validated_data.get('operating')
+        substation.action_dtt = validated_data.get('action_dtt')
+        substation.status = validated_data.get('status')
+        substation.description = validated_data.get('description')
+        substation.owner_flag = validated_data.get('owner_flag')
+        substation.gdo_gid = validated_data.get('gdo_gid')
+        substation.geom = GEOSGeometry(
+                validated_data.get('geom').geojson,
+                srid=validated_data.get('srid'))
+
+        substation.save()
+        return substation

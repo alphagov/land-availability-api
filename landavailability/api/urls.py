@@ -26,4 +26,7 @@ urlpatterns = [
     url(
         r'^motorway/$',
         views.MotorwayCreateView.as_view(), name='motorway-create'),
+    url(
+        r'^substation/$',
+        views.SubstationCreateView.as_view(), name='substation-create'),
 ]

@@ -4,11 +4,11 @@ import json
 from django.contrib.gis.geos import Point
 from api.models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
-    Motorway)
+    Motorway, Substation)
 from api.serializers import (
     BusStopSerializer, TrainStopSerializer, AddressSerializer,
     CodePointSerializer, BroadbandSerializer, MetroTubeSerializer,
-    GreenbeltSerializer, MotorwaySerializer)
+    GreenbeltSerializer, MotorwaySerializer, SubstationSerializer)
 
 
 class TestBusStopSerializer(TestCase):
@@ -324,3 +324,39 @@ class TestMotorwaySerializer(TestCase):
 
         serializer.save()
         self.assertEqual(Motorway.objects.count(), 1)
+
+
+class TestSubstationSerializer(TestCase):
+    @pytest.mark.django_db
+    def test_substation_serializer_create_object(self):
+        json_payload = """
+            {
+                "name": "BICF4",
+                "operating": "400kV",
+                "action_dtt": "20130514",
+                "status": "C",
+                "description": "BICKER FEN 400KV SUBSTATION",
+                "owner_flag": "Y",
+                "gdo_gid": "259039",
+                "geom": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [-0.22341515058230163, 52.93036769987315],
+                            [-0.22039561538021543, 52.93215130879717],
+                            [-0.21891135174799967, 52.93122765287705],
+                            [-0.22193998154995934, 52.92945074233686],
+                            [-0.22341515058230163, 52.93036769987315]
+                        ]
+                    ]
+                },
+                "srid": 4326
+            }
+        """
+
+        data = json.loads(json_payload)
+        serializer = SubstationSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        serializer.save()
+        self.assertEqual(Substation.objects.count(), 1)

@@ -111,7 +111,7 @@ def trainstop_predelete_handler(sender, instance, **kwargs):
 class Substation(models.Model):
     # Describe an instance of a Substation
 
-    name = models.CharField(db_index=True, max_length=255)
+    name = models.CharField(unique=True, max_length=255)
     operating = models.CharField(max_length=255, blank=True, null=True)
     action_dtt = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=255, blank=True, null=True)
