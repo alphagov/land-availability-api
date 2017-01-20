@@ -200,6 +200,28 @@ class TestMetroTubeSerializer(TestCase):
         serializer.save()
         self.assertEqual(MetroTube.objects.count(), 1)
 
+    @pytest.mark.django_db
+    def test_metrotube_serializer_create_object_no_naptan(self):
+        json_payload = """
+            {
+                "atco_code": "1800AMIC001",
+                "name": "Altrincham Interchange",
+                "locality": "",
+                "point": {
+                    "type": "Point",
+                    "coordinates": [-2.347743000012108,53.38737090322739]
+                },
+                "srid": 4326
+            }
+        """
+
+        data = json.loads(json_payload)
+        serializer = MetroTubeSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+
+        serializer.save()
+        self.assertEqual(MetroTube.objects.count(), 1)
+
 
 class TestGreenbeltSerializer(TestCase):
     @pytest.mark.django_db

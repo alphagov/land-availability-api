@@ -185,6 +185,49 @@ class TestMetroTubeView(LandAvailabilityAPITestCase):
         response = self.client.post(url, data, format='json')
         self.assertEqual(MetroTube.objects.count(), 1)
 
+    @pytest.mark.django_db
+    def test_metrotube_view_create_object_no_naptan(self):
+        url = reverse('metrotube-create')
+        data = {
+            "atco_code": "1800AMIC001",
+            "name": "Altrincham Interchange",
+            "locality": "",
+            "point": {
+                "type": "Point",
+                "coordinates": [-2.347743000012108, 53.38737090322739]
+            },
+            "srid": 4326
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(MetroTube.objects.count(), 1)
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(MetroTube.objects.count(), 1)
+
+    @pytest.mark.django_db
+    def test_metrotube_view_create_object_blank_naptan(self):
+        url = reverse('metrotube-create')
+        data = {
+            "atco_code": "1800AMIC001",
+            "name": "Altrincham Interchange",
+            "naptan_code": '',
+            "locality": "",
+            "point": {
+                "type": "Point",
+                "coordinates": [-2.347743000012108, 53.38737090322739]
+            },
+            "srid": 4326
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(MetroTube.objects.count(), 1)
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(MetroTube.objects.count(), 1)
+
 
 class TestGreenbeltView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
