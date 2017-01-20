@@ -229,6 +229,9 @@ class MetroTubeSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'atco_code': {
                 'validators': [],
+            },
+            'naptan_code': {
+                'validators': [],
             }
         }
 
