@@ -1,5 +1,5 @@
 ---
 applications:
 - name: land-availability-api
-  memory: 1G
+  memory: 512M
   buildpack: python_buildpack
