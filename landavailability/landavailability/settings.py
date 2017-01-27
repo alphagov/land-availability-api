@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 
 import os
 from django.core.exceptions import ImproperlyConfigured
+import dj_database_url
 
 
 def get_env_variable(var_name):
@@ -90,17 +91,9 @@ WSGI_APPLICATION = 'landavailability.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-         'NAME': get_env_variable("LANDAVAILABILITY_DB_NAME"),
-         'USER': get_env_variable("LANDAVAILABILITY_DB_USER"),
-         'PASSWORD': get_env_variable("LANDAVAILABILITY_DB_PASSWORD"),
-         'HOST': get_env_variable("LANDAVAILABILITY_DB_HOST"),
-         'PORT': get_env_variable("LANDAVAILABILITY_DB_PORT"),
-    },
-}
-
+DATABASES = {}
+DATABASES['default'] = dj_database_url.config()
+DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
 
 # Password validation
 # https://docs.djangoproject.com/en/1.10/ref/settings/#auth-password-validators
