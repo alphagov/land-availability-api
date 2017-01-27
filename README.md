@@ -24,23 +24,25 @@ psql landavailability
 
 # Project Configuration
 
-Make sure you have these environment variables set:
+Make sure you have this environment variable set:
 
 ```
-LANDAVAILABILITY_DB_NAME=landavailability
-LANDAVAILABILITY_DB_USER=youruser
-LANDAVAILABILITY_DB_PASSWORD=yourpassword
-LANDAVAILABILITY_DB_HOST=localhost
-LANDAVAILABILITY_DB_PORT=5432
+DATABASE_URL=postgres://USERNAME:PASSWORD@HOST:PORT/DBNAME
+```
+
+example:
+
+```
+DATABASE_URL=postgres://andreagrandi@localhost:5432/landavailability
 ```
 
 If you are using a Python virtual environment, you can save these values in
 $venv_folder/bin/postactivate script:
 
 ```
-export LANDAVAILABILITY_DB_NAME=landavailability
-export LANDAVAILABILITY_DB_USER=youruser
-export LANDAVAILABILITY_DB_PASSWORD=yourpassword
-export LANDAVAILABILITY_DB_HOST=localhost
-export LANDAVAILABILITY_DB_PORT=5432
+export DATABASE_URL=postgres://andreagrandi@localhost:5432/landavailability
 ```
+
+# Python
+
+The project is being developed and tested with **Python >= 3.5.x**
