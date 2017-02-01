@@ -1,13 +1,13 @@
 language: python
 python:
-  - '3.5'
+- '3.5'
 install: pip install -r requirements.txt
 services:
-  - postgresql
+- postgresql
 before_script:
-  - psql -c 'create database landavailability_test;' -U postgres
-  - psql -U postgres -c "create extension postgis"
-  - cd landavailability
+- psql -c 'create database landavailability_test;' -U postgres
+- psql -U postgres -c "create extension postgis"
+- cd landavailability
 env:
   global:
   - LANDAVAILABILITY_DB_NAME="landavailability_test"
@@ -15,4 +15,14 @@ env:
   - LANDAVAILABILITY_DB_PASSWORD=""
   - LANDAVAILABILITY_DB_HOST=localhost
   - LANDAVAILABILITY_DB_PORT=5432
+  - SECRET_KEY="abcd1234"
 script: pytest -v
+deploy:
+  provider: heroku
+  api_key:
+    secure: Ifp/MBDvqsXGDUzNkh5Fnn4p0zyo5mY1odMf6m8EBHUfhWvL9f4D8gyL6u1mQ77f0/5BaP5PMt2AHoxWJDuIzIllNvZBm7UfYU6AQUxm+7oopnMq7lrfwRuHJJ6kjyNZCw41LZDrnHJCoKRgSJarzrxWG8CuYFEdZqf4agNaIWRiPfhTIlxtep4uxTWJnCXRGdkg1uHUJ2PaktfkYcgFQQpKZxEgcKkeNuXZZ306HMSV/RWlioKY9elXO2uiINd+RLPHJ+Owxs+IjR18DXQWDFM9ZlZmU1g8CQK0IWCSr0g5QOXy22EYBL6g3adgpHA2E1ZY+kpm3B73aEAuaOyxFgTGXtToTEvyM8kjOP+oqbi8535YRi4TKefx3XK8zhRAb0OriFm/sUaGfLNgydemE8wu1DbpK1OY0UD+9mX3SY5Sy3T4cHtm1Fpu8XMMxNa5ajXNcjz8R4sKqjULDngy+5yuUrSucgqxnuxmzQFfoLrsfMD1GwVHBWh4RZvmHUf+ztcU0rLMNUbyuk1TpiZugSKxpZXXeBgbOYHyEQrtzn9U8O1cq/jCFFBxYMz6PT7hbWRmVhZSSm/sq+mxhHW29aMK816LtQOqm6xKQjirZ071sFAnnI34/4pMyE+zc+9PX/H2Mf7TfVGu8Rf8GDkjFQ02e7j4AdrDfdDov01NTkY=
+  app: land-availability-api
+  on:
+    repo: alphagov/land-availability-api
+  run:
+    - "python workshopvenues/manage.py migrate"
