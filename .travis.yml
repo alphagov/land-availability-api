@@ -10,12 +10,8 @@ before_script:
 - cd landavailability
 env:
   global:
-  - LANDAVAILABILITY_DB_NAME="landavailability_test"
-  - LANDAVAILABILITY_DB_USER="postgres"
-  - LANDAVAILABILITY_DB_PASSWORD=""
-  - LANDAVAILABILITY_DB_HOST=localhost
-  - LANDAVAILABILITY_DB_PORT=5432
   - SECRET_KEY="abcd1234"
+  - DATABASE_URL=postgres://postgres@localhost:5432/landavailability_test
 script: pytest -v
 deploy:
   provider: heroku
