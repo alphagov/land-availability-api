@@ -1,1 +1,1 @@
-web: gunicorn landavailability.wsgi --log-file -
+web: gunicorn landavailability/landavailability.wsgi --log-file -
