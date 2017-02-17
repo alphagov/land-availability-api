@@ -9,7 +9,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 from api.models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
-    Motorway, Substation, OverheadLine, School)
+    Motorway, Substation, OverheadLine, School, Location)
 
 
 class LandAvailabilityAPITestCase(APITestCase):
@@ -466,3 +466,89 @@ class TestSchoolView(LandAvailabilityAPITestCase):
 
         response = self.client.post(url, data, format='json')
         self.assertEqual(School.objects.count(), 1)
+
+
+class TestLocationCreateView(LandAvailabilityAPITestCase):
+    @pytest.mark.django_db
+    def test_location_create_view_create_object(self):
+        url = reverse('location-create')
+        data = {
+            "uprn": "123456789AB",
+            "name": "St James C E Secondary School (10910)",
+            "authority": "Bolton",
+            "owner": "Test owner",
+            "unique_asset_id": "10910",
+            "geom": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                        [
+                            -2.1614837256814963,
+                            53.07183331520438
+                        ],
+                        [
+                            -2.161440204004493,
+                            53.07167876512527
+                        ],
+                        [
+                            -2.161426422046515,
+                            53.07158231050548
+                        ],
+                        [
+                            -2.161412261861244,
+                            53.07128283205548
+                        ],
+                        [
+                            -2.161373377871479,
+                            53.071211109880664
+                        ],
+                        [
+                            -2.161369504865456,
+                            53.07118401041043
+                        ],
+                        [
+                            -2.1617677327485008,
+                            53.07111245525075
+                        ],
+                        [
+                            -2.1617682739467705,
+                            53.071109120469266
+                        ],
+                        [
+                            -2.1620568237599738,
+                            53.07147709017702
+                        ],
+                        [
+                            -2.162246918923053,
+                            53.07170561414385
+                        ],
+                        [
+                            -2.162193868651531,
+                            53.07171503969784
+                        ],
+                        [
+                            -2.162142294698858,
+                            53.07172373689699
+                        ],
+                        [
+                            -2.1621361236605248,
+                            53.07171871503741
+                        ],
+                        [
+                            -2.1614837256814963,
+                            53.07183331520438
+                        ]
+                        ]
+                    ]
+                ]
+            },
+            "srid": 4326
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Location.objects.count(), 1)
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(Location.objects.count(), 1)
