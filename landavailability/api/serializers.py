@@ -1,6 +1,6 @@
 from .models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
-    Motorway, Substation, OverheadLine, School)
+    Motorway, Substation, OverheadLine, School, Location)
 from rest_framework import serializers
 from django.contrib.gis.geos import GEOSGeometry
 import json
@@ -444,3 +444,44 @@ class SchoolSerializer(serializers.ModelSerializer):
 
         school.save()
         return school
+
+
+class LocationSerializer(serializers.ModelSerializer):
+    # this extra field is used to specify the srid geo format
+    srid = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = Location
+        fields = '__all__'
+
+        # We want to handle duplicated entries manually so we remove the
+        # unique validator
+        extra_kwargs = {
+            'uprn': {
+                'validators': [],
+            },
+            'point': {
+                'validators': [],
+            }
+        }
+
+    def create(self, validated_data):
+        uprn = validated_data['uprn']
+
+        try:
+            location = Location.objects.get(uprn=uprn)
+        except Location.DoesNotExist:
+            location = Location()
+            location.uprn = uprn
+
+        location.geom = GEOSGeometry(
+                validated_data.get('geom').geojson,
+                srid=validated_data.get('srid'))
+        location.point = location.geom.centroid
+        location.name = validated_data.get('name')
+        location.authority = validated_data.get('authority')
+        location.owner = validated_data.get('owner')
+        location.unique_asset_id = validated_data.get('unique_asset_id')
+
+        location.save()
+        return location

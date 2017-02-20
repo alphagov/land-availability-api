@@ -5,12 +5,12 @@ from rest_framework import status
 from rest_framework.permissions import IsAdminUser
 from .models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
-    Motorway, Substation, OverheadLine, School)
+    Motorway, Substation, OverheadLine, School, Location)
 from .serializers import (
     BusStopSerializer, TrainStopSerializer, AddressSerializer,
     CodePointSerializer, BroadbandSerializer, MetroTubeSerializer,
     GreenbeltSerializer, MotorwaySerializer, SubstationSerializer,
-    OverheadLineSerializer, SchoolSerializer)
+    OverheadLineSerializer, SchoolSerializer, LocationSerializer)
 from django.contrib.gis.geos import GEOSGeometry
 
 
@@ -170,6 +170,19 @@ class SchoolCreateView(APIView):
             school = serializer.save()
             school.update_close_locations()
 
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LocationCreateView(APIView):
+    permission_classes = (IsAdminUser, )
+
+    def post(self, request, format=None):
+        serializer = LocationSerializer(data=request.data)
+
+        if serializer.is_valid():
+            school = serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -384,12 +384,12 @@ def metrotube_predelete_handler(sender, instance, **kwargs):
 class Location(models.Model):
     # Describes an instance of a Location
 
-    name = models.CharField(db_index=True, max_length=255)
-    point = models.PointField(geography=True, spatial_index=True)
+    uprn = models.CharField(unique=True, max_length=100)
+    name = models.CharField(max_length=255, blank=True, null=True)
+    point = models.PointField(geography=True, spatial_index=True, null=True)
     geom = models.MultiPolygonField(geography=True, spatial_index=True)
     authority = models.CharField(max_length=255, blank=True, null=True)
     owner = models.CharField(max_length=255, blank=True, null=True)
-    uprn = models.CharField(max_length=100, blank=True, null=True)
     unique_asset_id = models.CharField(max_length=100, blank=True, null=True)
     nearest_busstop = models.ForeignKey(
         BusStop, on_delete=models.SET_NULL, null=True)
