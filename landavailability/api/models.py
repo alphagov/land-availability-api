@@ -385,6 +385,7 @@ class Location(models.Model):
     # Describes an instance of a Location
 
     uprn = models.CharField(unique=True, max_length=100)
+    ba_ref = models.CharField(max_length=255, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     point = models.PointField(geography=True, spatial_index=True, null=True)
     geom = models.MultiPolygonField(geography=True, spatial_index=True)

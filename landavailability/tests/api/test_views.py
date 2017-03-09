@@ -474,6 +474,7 @@ class TestLocationCreateView(LandAvailabilityAPITestCase):
         url = reverse('location-create')
         data = {
             "uprn": "123456789AB",
+            "ba_ref": "47523471536",
             "name": "St James C E Secondary School (10910)",
             "authority": "Bolton",
             "owner": "Test owner",

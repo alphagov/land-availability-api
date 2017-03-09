@@ -474,6 +474,7 @@ class LocationSerializer(serializers.ModelSerializer):
             location = Location()
             location.uprn = uprn
 
+        location.ba_ref = validated_data.get('ba_ref')
         location.geom = GEOSGeometry(
                 validated_data.get('geom').geojson,
                 srid=validated_data.get('srid'))
