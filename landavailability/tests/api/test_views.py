@@ -246,76 +246,76 @@ class TestGreenbeltView(LandAvailabilityAPITestCase):
                 "coordinates": [
                     [
                         [
-                        [
-                            -2.1614837256814963,
-                            53.07183331520438,
-                            0
-                        ],
-                        [
-                            -2.161440204004493,
-                            53.07167876512527,
-                            0
-                        ],
-                        [
-                            -2.161426422046515,
-                            53.07158231050548,
-                            0
-                        ],
-                        [
-                            -2.161412261861244,
-                            53.07128283205548,
-                            0
-                        ],
-                        [
-                            -2.161373377871479,
-                            53.071211109880664,
-                            0
-                        ],
-                        [
-                            -2.161369504865456,
-                            53.07118401041043,
-                            0
-                        ],
-                        [
-                            -2.1617677327485008,
-                            53.07111245525075,
-                            0
-                        ],
-                        [
-                            -2.1617682739467705,
-                            53.071109120469266,
-                            0
-                        ],
-                        [
-                            -2.1620568237599738,
-                            53.07147709017702,
-                            0
-                        ],
-                        [
-                            -2.162246918923053,
-                            53.07170561414385,
-                            0
-                        ],
-                        [
-                            -2.162193868651531,
-                            53.07171503969784,
-                            0
-                        ],
-                        [
-                            -2.162142294698858,
-                            53.07172373689699,
-                            0
-                        ],
-                        [
-                            -2.1621361236605248,
-                            53.07171871503741,
-                            0
-                        ],
-                        [
-                            -2.1614837256814963,
-                            53.07183331520438,
-                            0
-                        ]
+                            [
+                                -2.1614837256814963,
+                                53.07183331520438,
+                                0
+                            ],
+                            [
+                                -2.161440204004493,
+                                53.07167876512527,
+                                0
+                            ],
+                            [
+                                -2.161426422046515,
+                                53.07158231050548,
+                                0
+                            ],
+                            [
+                                -2.161412261861244,
+                                53.07128283205548,
+                                0
+                            ],
+                            [
+                                -2.161373377871479,
+                                53.071211109880664,
+                                0
+                            ],
+                            [
+                                -2.161369504865456,
+                                53.07118401041043,
+                                0
+                            ],
+                            [
+                                -2.1617677327485008,
+                                53.07111245525075,
+                                0
+                            ],
+                            [
+                                -2.1617682739467705,
+                                53.071109120469266,
+                                0
+                            ],
+                            [
+                                -2.1620568237599738,
+                                53.07147709017702,
+                                0
+                            ],
+                            [
+                                -2.162246918923053,
+                                53.07170561414385,
+                                0
+                            ],
+                            [
+                                -2.162193868651531,
+                                53.07171503969784,
+                                0
+                            ],
+                            [
+                                -2.162142294698858,
+                                53.07172373689699,
+                                0
+                            ],
+                            [
+                                -2.1621361236605248,
+                                53.07171871503741,
+                                0
+                            ],
+                            [
+                                -2.1614837256814963,
+                                53.07183331520438,
+                                0
+                            ]
                         ]
                     ]
                 ]
@@ -468,10 +468,10 @@ class TestSchoolView(LandAvailabilityAPITestCase):
         self.assertEqual(School.objects.count(), 1)
 
 
-class TestLocationCreateView(LandAvailabilityAPITestCase):
+class TestLocationView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_location_create_view_create_object(self):
-        url = reverse('location-create')
+        url = reverse('location')
         data = {
             "uprn": "123456789AB",
             "ba_ref": "47523471536",
@@ -484,62 +484,62 @@ class TestLocationCreateView(LandAvailabilityAPITestCase):
                 "coordinates": [
                     [
                         [
-                        [
-                            -2.1614837256814963,
-                            53.07183331520438
-                        ],
-                        [
-                            -2.161440204004493,
-                            53.07167876512527
-                        ],
-                        [
-                            -2.161426422046515,
-                            53.07158231050548
-                        ],
-                        [
-                            -2.161412261861244,
-                            53.07128283205548
-                        ],
-                        [
-                            -2.161373377871479,
-                            53.071211109880664
-                        ],
-                        [
-                            -2.161369504865456,
-                            53.07118401041043
-                        ],
-                        [
-                            -2.1617677327485008,
-                            53.07111245525075
-                        ],
-                        [
-                            -2.1617682739467705,
-                            53.071109120469266
-                        ],
-                        [
-                            -2.1620568237599738,
-                            53.07147709017702
-                        ],
-                        [
-                            -2.162246918923053,
-                            53.07170561414385
-                        ],
-                        [
-                            -2.162193868651531,
-                            53.07171503969784
-                        ],
-                        [
-                            -2.162142294698858,
-                            53.07172373689699
-                        ],
-                        [
-                            -2.1621361236605248,
-                            53.07171871503741
-                        ],
-                        [
-                            -2.1614837256814963,
-                            53.07183331520438
-                        ]
+                            [
+                                -2.1614837256814963,
+                                53.07183331520438
+                            ],
+                            [
+                                -2.161440204004493,
+                                53.07167876512527
+                            ],
+                            [
+                                -2.161426422046515,
+                                53.07158231050548
+                            ],
+                            [
+                                -2.161412261861244,
+                                53.07128283205548
+                            ],
+                            [
+                                -2.161373377871479,
+                                53.071211109880664
+                            ],
+                            [
+                                -2.161369504865456,
+                                53.07118401041043
+                            ],
+                            [
+                                -2.1617677327485008,
+                                53.07111245525075
+                            ],
+                            [
+                                -2.1617682739467705,
+                                53.071109120469266
+                            ],
+                            [
+                                -2.1620568237599738,
+                                53.07147709017702
+                            ],
+                            [
+                                -2.162246918923053,
+                                53.07170561414385
+                            ],
+                            [
+                                -2.162193868651531,
+                                53.07171503969784
+                            ],
+                            [
+                                -2.162142294698858,
+                                53.07172373689699
+                            ],
+                            [
+                                -2.1621361236605248,
+                                53.07171871503741
+                            ],
+                            [
+                                -2.1614837256814963,
+                                53.07183331520438
+                            ]
                         ]
                     ]
                 ]
@@ -553,3 +553,131 @@ class TestLocationCreateView(LandAvailabilityAPITestCase):
 
         response = self.client.post(url, data, format='json')
         self.assertEqual(Location.objects.count(), 1)
+
+    @pytest.mark.django_db
+    def test_location_view_get_locations(self):
+        # Create test CodePoint
+        url = reverse('codepoint-create')
+
+        data = {
+                "postcode": "CB11AZ",
+                "quality": "10",
+                "country": "E92000001",
+                "nhs_region": "E19000001",
+                "nhs_health_authority": "E18000002",
+                "county": "",
+                "district": "E08000002",
+                "ward": "E05000681",
+                "point": {
+                    "type": "Point",
+                    "coordinates": [0.13088953859958197, 52.20513657706537]
+                },
+                "srid": 4326
+            }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Create test Locations
+        url = reverse('location')
+
+        data = {
+            "uprn": "010090969113",
+            "ba_ref": "00004870000113",
+            "name": "Test Location 1",
+            "authority": "Cambridge City Council",
+            "owner": "",
+            "unique_asset_id": "",
+            "geom": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [0.13153553009033203, 52.205765731674575],
+                            [0.13143360614776609, 52.20569340742784],
+                            [0.13174474239349365, 52.20561122064091],
+                            [0.13180643320083618, 52.20569669489615],
+                            [0.13153553009033203, 52.205765731674575]
+                        ]
+                    ]
+                ]
+            },
+            "srid": 4326
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        data = {
+            "uprn": "200004166552",
+            "ba_ref": "00004310025025",
+            "name": "Test Location 2",
+            "authority": "Cambridge City Council",
+            "owner": "",
+            "unique_asset_id": "",
+            "geom": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [0.13197273015975952, 52.20564902658178],
+                            [0.13188958168029785, 52.20554218362242],
+                            [0.13214707374572754, 52.205476433981275],
+                            [0.13222217559814453, 52.205583277098725],
+                            [0.13197273015975952, 52.20564902658178]
+                        ]
+                    ]
+                ]
+            },
+            "srid": 4326
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        data = {
+            "uprn": "200004178088",
+            "ba_ref": "00006230135008",
+            "name": "Test Location 3",
+            "authority": "Cambridge City Council",
+            "owner": "",
+            "unique_asset_id": "",
+            "geom": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [0.13076573610305786, 52.20487153271788],
+                            [0.13069331645965576, 52.20480906961836],
+                            [0.13091862201690674, 52.204717018574804],
+                            [0.13101786375045776, 52.20480906961836],
+                            [0.13076573610305786, 52.20487153271788]
+                        ]
+                    ]
+                ]
+            },
+            "srid": 4326
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Get the data from the API
+        response = self.client.get(
+            url, {'postcode': 'CB11AZ', 'range_distance': 1000})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 3)
+
+    @pytest.mark.django_db
+    def test_location_view_get_locations_no_params(self):
+        url = reverse('location')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_location_view_get_locations_invalid_postcode(self):
+        url = reverse('location')
+        response = self.client.get(
+            url, {'postcode': 'XX11YY', 'range_distance': 1000})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

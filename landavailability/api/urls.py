@@ -37,5 +37,5 @@ urlpatterns = [
         views.SchoolCreateView.as_view(), name='school-create'),
     url(
         r'^location/$',
-        views.LocationCreateView.as_view(), name='location-create'),
+        views.LocationView.as_view(), name='location'),
 ]

@@ -12,6 +12,8 @@ from .serializers import (
     GreenbeltSerializer, MotorwaySerializer, SubstationSerializer,
     OverheadLineSerializer, SchoolSerializer, LocationSerializer)
 from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.db.models.functions import Distance
+from django.contrib.gis.measure import D
 
 
 class BusStopCreateView(APIView):
@@ -175,7 +177,7 @@ class SchoolCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LocationCreateView(APIView):
+class LocationView(APIView):
     permission_classes = (IsAdminUser, )
 
     def post(self, request, format=None):
@@ -186,3 +188,25 @@ class LocationCreateView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, *args, **kwargs):
+        postcode = request.query_params.get('postcode')
+        range_distance = request.query_params.get('range_distance')
+
+        if postcode and range_distance:
+            try:
+                codepoint = CodePoint.objects.get(postcode=postcode)
+            except CodePoint.DoesNotExist as ex:
+                return Response(
+                    'The given postcode is not available in CodePoints',
+                    status=status.HTTP_400_BAD_REQUEST)
+
+            locations = Location.objects.filter(
+                geom__dwithin=(codepoint.point, D(m=range_distance))).\
+                annotate(distance=Distance('geom', codepoint.point))
+            serializer = LocationSerializer(locations, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                'The postcode parameter is missing',
+                status=status.HTTP_400_BAD_REQUEST)
