@@ -473,6 +473,7 @@ class TestLocationSerializer(TestCase):
         json_payload = """
             {
                 "uprn": "123456789AB",
+                "ba_ref": "468765672358",
                 "name": "St James C E Secondary School (10910)",
                 "authority": "Bolton",
                 "owner": "Test owner",
