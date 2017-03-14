@@ -194,6 +194,9 @@ class LocationView(APIView):
         range_distance = request.query_params.get('range_distance')
 
         if postcode and range_distance:
+            # Normalise postcode first
+            postcode = postcode.replace(' ', '').upper()
+
             try:
                 codepoint = CodePoint.objects.get(postcode=postcode)
             except CodePoint.DoesNotExist as ex:
