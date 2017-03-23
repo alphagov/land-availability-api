@@ -392,6 +392,7 @@ class Location(models.Model):
     authority = models.CharField(max_length=255, blank=True, null=True)
     owner = models.CharField(max_length=255, blank=True, null=True)
     unique_asset_id = models.CharField(max_length=100, blank=True, null=True)
+    full_address = models.CharField(max_length=255, blank=True, null=True)
     nearest_busstop = models.ForeignKey(
         BusStop, on_delete=models.SET_NULL, null=True)
     nearest_busstop_distance = models.FloatField(null=True)  # meters
