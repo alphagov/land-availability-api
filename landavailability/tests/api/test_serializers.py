@@ -478,6 +478,7 @@ class TestLocationSerializer(TestCase):
                 "authority": "Bolton",
                 "owner": "Test owner",
                 "unique_asset_id": "10910",
+                "full_address": "Full address of St James School",
                 "geom": {
                     "type": "MultiPolygon",
                     "coordinates": [
