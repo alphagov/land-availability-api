@@ -25,7 +25,7 @@ class LandAvailabilityAPITestCase(APITestCase):
 class TestBusStopView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_busstop_view_create_object(self):
-        url = reverse('busstop-create')
+        url = reverse('busstops-create')
         data = {
             "amic_code": "1800AMIC001",
             "point": {
@@ -51,7 +51,7 @@ class TestBusStopView(LandAvailabilityAPITestCase):
 class TestTrainStopView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_trainstop_view_create_object(self):
-        url = reverse('trainstop-create')
+        url = reverse('trainstops-create')
         data = {
             "atcode_code": "9100ALTRNHM",
             "naptan_code": "",
@@ -79,7 +79,7 @@ class TestTrainStopView(LandAvailabilityAPITestCase):
 class TestAddressView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_address_view_create_object(self):
-        url = reverse('address-create')
+        url = reverse('addresses-create')
         data = {
             "uprn": "12345678",
             "address_line_1": "Dataland",
@@ -106,7 +106,7 @@ class TestAddressView(LandAvailabilityAPITestCase):
 class TestCodePointView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_codepoint_view_create_object(self):
-        url = reverse('codepoint-create')
+        url = reverse('codepoints-create')
         data = {
                 "postcode": "BL0 0AA",
                 "quality": "10",
@@ -142,7 +142,7 @@ class TestBroadbandView(LandAvailabilityAPITestCase):
         codepoint.quality = 10
         codepoint.save()
 
-        url = reverse('broadband-create')
+        url = reverse('broadbands-create')
         data = {
             "postcode": "ME5 8TL",
             "speed_30_mb_percentage": 50,
@@ -165,7 +165,7 @@ class TestBroadbandView(LandAvailabilityAPITestCase):
 class TestMetroTubeView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_metrotube_view_create_object(self):
-        url = reverse('metrotube-create')
+        url = reverse('metrotubes-create')
         data = {
             "atco_code": "1800AMIC001",
             "name": "Altrincham Interchange",
@@ -187,7 +187,7 @@ class TestMetroTubeView(LandAvailabilityAPITestCase):
 
     @pytest.mark.django_db
     def test_metrotube_view_create_object_no_naptan(self):
-        url = reverse('metrotube-create')
+        url = reverse('metrotubes-create')
         data = {
             "atco_code": "1800AMIC001",
             "name": "Altrincham Interchange",
@@ -208,7 +208,7 @@ class TestMetroTubeView(LandAvailabilityAPITestCase):
 
     @pytest.mark.django_db
     def test_metrotube_view_create_object_blank_naptan(self):
-        url = reverse('metrotube-create')
+        url = reverse('metrotubes-create')
         data = {
             "atco_code": "1800AMIC001",
             "name": "Altrincham Interchange",
@@ -232,7 +232,7 @@ class TestMetroTubeView(LandAvailabilityAPITestCase):
 class TestGreenbeltView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_greenbelt_view_create_object(self):
-        url = reverse('greenbelt-create')
+        url = reverse('greenbelts-create')
         data = {
             "code": "Local_Authority_green_belt_boundaries_2014-15.25",
             "la_name": "City of Stoke-on-Trent (B)",
@@ -334,7 +334,7 @@ class TestGreenbeltView(LandAvailabilityAPITestCase):
 class TestMotorwayView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_motorway_view_create_object(self):
-        url = reverse('motorway-create')
+        url = reverse('motorways-create')
         data = {
             "identifier": "1800AMIC001",
             "number": "M58",
@@ -356,7 +356,7 @@ class TestMotorwayView(LandAvailabilityAPITestCase):
 class TestSubstationView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_substation_view_create_object(self):
-        url = reverse('substation-create')
+        url = reverse('substations-create')
         data = {
             "name": "BICF4",
             "operating": "400kV",
@@ -391,7 +391,7 @@ class TestSubstationView(LandAvailabilityAPITestCase):
 class TestOverheadLineView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_overheadline_view_create_object(self):
-        url = reverse('overheadline-create')
+        url = reverse('overheadlines-create')
         data = {
             "gdo_gid": "43166",
             "route_asset": "YYE",
@@ -444,7 +444,7 @@ class TestOverheadLineView(LandAvailabilityAPITestCase):
 class TestSchoolView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_school_view_create_object(self):
-        url = reverse('school-create')
+        url = reverse('schools-create')
         data = {
             "urn": "100000",
             "la_name": "School Sample",
@@ -471,7 +471,7 @@ class TestSchoolView(LandAvailabilityAPITestCase):
 class TestLocationView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_location_create_view_create_object(self):
-        url = reverse('location')
+        url = reverse('locations')
         data = {
             "uprn": "123456789AB",
             "ba_ref": "47523471536",
@@ -557,7 +557,7 @@ class TestLocationView(LandAvailabilityAPITestCase):
     @pytest.mark.django_db
     def test_location_view_get_locations(self):
         # Create test CodePoint
-        url = reverse('codepoint-create')
+        url = reverse('codepoints-create')
 
         data = {
                 "postcode": "CB11AZ",
@@ -579,7 +579,7 @@ class TestLocationView(LandAvailabilityAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create test Locations
-        url = reverse('location')
+        url = reverse('locations')
 
         data = {
             "uprn": "010090969113",
@@ -671,13 +671,13 @@ class TestLocationView(LandAvailabilityAPITestCase):
 
     @pytest.mark.django_db
     def test_location_view_get_locations_no_params(self):
-        url = reverse('location')
+        url = reverse('locations')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @pytest.mark.django_db
     def test_location_view_get_locations_invalid_postcode(self):
-        url = reverse('location')
+        url = reverse('locations')
         response = self.client.get(
             url, {'postcode': 'XX11YY', 'range_distance': 1000})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

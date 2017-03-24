@@ -3,39 +3,39 @@ from . import views
 
 urlpatterns = [
     url(
-        r'^busstop/$',
-        views.BusStopCreateView.as_view(), name='busstop-create'),
+        r'^busstops/$',
+        views.BusStopCreateView.as_view(), name='busstops-create'),
     url(
-        r'^trainstop/$',
-        views.TrainStopCreateView.as_view(), name='trainstop-create'),
+        r'^trainstops/$',
+        views.TrainStopCreateView.as_view(), name='trainstops-create'),
     url(
-        r'^address/$',
-        views.AddressCreateView.as_view(), name='address-create'),
+        r'^addresses/$',
+        views.AddressCreateView.as_view(), name='addresses-create'),
     url(
-        r'^codepoint/$',
-        views.CodePointCreateView.as_view(), name='codepoint-create'),
+        r'^codepoints/$',
+        views.CodePointCreateView.as_view(), name='codepoints-create'),
     url(
-        r'^broadband/$',
-        views.BroadbandCreateView.as_view(), name='broadband-create'),
+        r'^broadbands/$',
+        views.BroadbandCreateView.as_view(), name='broadbands-create'),
     url(
-        r'^metrotube/$',
-        views.MetroTubeCreateView.as_view(), name='metrotube-create'),
+        r'^metrotubes/$',
+        views.MetroTubeCreateView.as_view(), name='metrotubes-create'),
     url(
-        r'^greenbelt/$',
-        views.GreenbeltCreateView.as_view(), name='greenbelt-create'),
+        r'^greenbelts/$',
+        views.GreenbeltCreateView.as_view(), name='greenbelts-create'),
     url(
-        r'^motorway/$',
-        views.MotorwayCreateView.as_view(), name='motorway-create'),
+        r'^motorways/$',
+        views.MotorwayCreateView.as_view(), name='motorways-create'),
     url(
-        r'^substation/$',
-        views.SubstationCreateView.as_view(), name='substation-create'),
+        r'^substations/$',
+        views.SubstationCreateView.as_view(), name='substations-create'),
     url(
-        r'^overheadline/$',
-        views.OverheadLineCreateView.as_view(), name='overheadline-create'),
+        r'^overheadlines/$',
+        views.OverheadLineCreateView.as_view(), name='overheadlines-create'),
     url(
-        r'^school/$',
-        views.SchoolCreateView.as_view(), name='school-create'),
+        r'^schools/$',
+        views.SchoolCreateView.as_view(), name='schools-create'),
     url(
-        r'^location/$',
-        views.LocationView.as_view(), name='location'),
+        r'^locations/$',
+        views.LocationView.as_view(), name='locations'),
 ]
