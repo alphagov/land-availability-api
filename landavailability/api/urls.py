@@ -38,4 +38,7 @@ urlpatterns = [
     url(
         r'^locations/$',
         views.LocationView.as_view(), name='locations'),
+    url(
+        r'^locations/(?P<uprn>[a-zA-Z0-9]+)/$',
+        views.LocationDetailsView.as_view(), name='location-details'),
 ]
