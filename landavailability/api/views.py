@@ -2,7 +2,7 @@ from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from .models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
     Motorway, Substation, OverheadLine, School, Location)
@@ -213,3 +213,11 @@ class LocationView(APIView):
             return Response(
                 'The postcode parameter is missing',
                 status=status.HTTP_400_BAD_REQUEST)
+
+
+class LocationDetailsView(generics.RetrieveAPIView):
+    permission_classes = (IsAuthenticated, )
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
+    lookup_field = 'uprn'
+    lookup_url_kwarg = 'uprn'

@@ -681,3 +681,43 @@ class TestLocationView(LandAvailabilityAPITestCase):
         response = self.client.get(
             url, {'postcode': 'XX11YY', 'range_distance': 1000})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class TestLocationDetailsView(LandAvailabilityAPITestCase):
+    @pytest.mark.django_db
+    def test_location_details(self):
+        # Create test Location
+        url = reverse('locations')
+
+        data = {
+            "uprn": "010090969113",
+            "ba_ref": "00004870000113",
+            "name": "Test Location 1",
+            "authority": "Cambridge City Council",
+            "owner": "",
+            "unique_asset_id": "",
+            "geom": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [0.13153553009033203, 52.205765731674575],
+                            [0.13143360614776609, 52.20569340742784],
+                            [0.13174474239349365, 52.20561122064091],
+                            [0.13180643320083618, 52.20569669489615],
+                            [0.13153553009033203, 52.205765731674575]
+                        ]
+                    ]
+                ]
+            },
+            "srid": 4326
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('location-details', kwargs={'uprn': '010090969113'})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()['uprn'], '010090969113')
