@@ -10,9 +10,11 @@ from rest_framework.test import APIClient
 from api.models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
     Motorway, Substation, OverheadLine, School, Location)
+from api.serializers import LocationSerializer, CodePointSerializer
+import json
 
 
-class LandAvailabilityAPITestCase(APITestCase):
+class LandAvailabilityAdminAPITestCase(APITestCase):
     @pytest.mark.django_db
     def setUp(self):
         self.user = User.objects.create_superuser(
@@ -22,7 +24,17 @@ class LandAvailabilityAPITestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
 
 
-class TestBusStopView(LandAvailabilityAPITestCase):
+class LandAvailabilityUserAPITestCase(APITestCase):
+    @pytest.mark.django_db
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='test', email='test@…', password='top_secret')
+        token = Token.objects.create(user=self.user)
+        self.client = APIClient()
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+
+
+class TestBusStopView(LandAvailabilityAdminAPITestCase):
     @pytest.mark.django_db
     def test_busstop_view_create_object(self):
         url = reverse('busstops-create')
@@ -48,7 +60,7 @@ class TestBusStopView(LandAvailabilityAPITestCase):
         self.assertEqual(BusStop.objects.count(), 1)
 
 
-class TestTrainStopView(LandAvailabilityAPITestCase):
+class TestTrainStopView(LandAvailabilityAdminAPITestCase):
     @pytest.mark.django_db
     def test_trainstop_view_create_object(self):
         url = reverse('trainstops-create')
@@ -76,7 +88,7 @@ class TestTrainStopView(LandAvailabilityAPITestCase):
         self.assertEqual(TrainStop.objects.count(), 1)
 
 
-class TestAddressView(LandAvailabilityAPITestCase):
+class TestAddressView(LandAvailabilityAdminAPITestCase):
     @pytest.mark.django_db
     def test_address_view_create_object(self):
         url = reverse('addresses-create')
@@ -103,7 +115,7 @@ class TestAddressView(LandAvailabilityAPITestCase):
         self.assertEqual(Address.objects.count(), 1)
 
 
-class TestCodePointView(LandAvailabilityAPITestCase):
+class TestCodePointView(LandAvailabilityAdminAPITestCase):
     @pytest.mark.django_db
     def test_codepoint_view_create_object(self):
         url = reverse('codepoints-create')
@@ -131,7 +143,7 @@ class TestCodePointView(LandAvailabilityAPITestCase):
         self.assertEqual(CodePoint.objects.count(), 1)
 
 
-class TestBroadbandView(LandAvailabilityAPITestCase):
+class TestBroadbandView(LandAvailabilityAdminAPITestCase):
     @pytest.mark.django_db
     def test_broadband_view_create_object(self):
         # Prepare a CodePoint
@@ -162,7 +174,7 @@ class TestBroadbandView(LandAvailabilityAPITestCase):
         self.assertEqual(Broadband.objects.count(), 1)
 
 
-class TestMetroTubeView(LandAvailabilityAPITestCase):
+class TestMetroTubeView(LandAvailabilityAdminAPITestCase):
     @pytest.mark.django_db
     def test_metrotube_view_create_object(self):
         url = reverse('metrotubes-create')
@@ -229,7 +241,7 @@ class TestMetroTubeView(LandAvailabilityAPITestCase):
         self.assertEqual(MetroTube.objects.count(), 1)
 
 
-class TestGreenbeltView(LandAvailabilityAPITestCase):
+class TestGreenbeltView(LandAvailabilityAdminAPITestCase):
     @pytest.mark.django_db
     def test_greenbelt_view_create_object(self):
         url = reverse('greenbelts-create')
@@ -331,7 +343,7 @@ class TestGreenbeltView(LandAvailabilityAPITestCase):
         self.assertEqual(Greenbelt.objects.count(), 1)
 
 
-class TestMotorwayView(LandAvailabilityAPITestCase):
+class TestMotorwayView(LandAvailabilityAdminAPITestCase):
     @pytest.mark.django_db
     def test_motorway_view_create_object(self):
         url = reverse('motorways-create')
@@ -353,7 +365,7 @@ class TestMotorwayView(LandAvailabilityAPITestCase):
         self.assertEqual(Motorway.objects.count(), 1)
 
 
-class TestSubstationView(LandAvailabilityAPITestCase):
+class TestSubstationView(LandAvailabilityAdminAPITestCase):
     @pytest.mark.django_db
     def test_substation_view_create_object(self):
         url = reverse('substations-create')
@@ -388,7 +400,7 @@ class TestSubstationView(LandAvailabilityAPITestCase):
         self.assertEqual(Substation.objects.count(), 1)
 
 
-class TestOverheadLineView(LandAvailabilityAPITestCase):
+class TestOverheadLineView(LandAvailabilityAdminAPITestCase):
     @pytest.mark.django_db
     def test_overheadline_view_create_object(self):
         url = reverse('overheadlines-create')
@@ -441,7 +453,7 @@ class TestOverheadLineView(LandAvailabilityAPITestCase):
         self.assertEqual(OverheadLine.objects.count(), 1)
 
 
-class TestSchoolView(LandAvailabilityAPITestCase):
+class TestSchoolView(LandAvailabilityAdminAPITestCase):
     @pytest.mark.django_db
     def test_school_view_create_object(self):
         url = reverse('schools-create')
@@ -468,7 +480,7 @@ class TestSchoolView(LandAvailabilityAPITestCase):
         self.assertEqual(School.objects.count(), 1)
 
 
-class TestLocationView(LandAvailabilityAPITestCase):
+class TestLocationViewPost(LandAvailabilityAdminAPITestCase):
     @pytest.mark.django_db
     def test_location_create_view_create_object(self):
         url = reverse('locations')
@@ -554,12 +566,13 @@ class TestLocationView(LandAvailabilityAPITestCase):
         response = self.client.post(url, data, format='json')
         self.assertEqual(Location.objects.count(), 1)
 
+
+class TestLocationViewGet(LandAvailabilityUserAPITestCase):
     @pytest.mark.django_db
     def test_location_view_get_locations(self):
         # Create test CodePoint
-        url = reverse('codepoints-create')
 
-        data = {
+        json_payload = """{
                 "postcode": "CB11AZ",
                 "quality": "10",
                 "country": "E92000001",
@@ -573,15 +586,16 @@ class TestLocationView(LandAvailabilityAPITestCase):
                     "coordinates": [0.13088953859958197, 52.20513657706537]
                 },
                 "srid": 4326
-            }
+            }"""
 
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = json.loads(json_payload)
+        serializer = CodePointSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
 
         # Create test Locations
-        url = reverse('locations')
 
-        data = {
+        json_payload = """{
             "uprn": "010090969113",
             "ba_ref": "00004870000113",
             "name": "Test Location 1",
@@ -603,12 +617,14 @@ class TestLocationView(LandAvailabilityAPITestCase):
                 ]
             },
             "srid": 4326
-        }
+        }"""
 
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = json.loads(json_payload)
+        serializer = LocationSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
 
-        data = {
+        json_payload = """{
             "uprn": "200004166552",
             "ba_ref": "00004310025025",
             "name": "Test Location 2",
@@ -630,12 +646,14 @@ class TestLocationView(LandAvailabilityAPITestCase):
                 ]
             },
             "srid": 4326
-        }
+        }"""
 
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = json.loads(json_payload)
+        serializer = LocationSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
 
-        data = {
+        json_payload = """{
             "uprn": "200004178088",
             "ba_ref": "00006230135008",
             "name": "Test Location 3",
@@ -657,12 +675,15 @@ class TestLocationView(LandAvailabilityAPITestCase):
                 ]
             },
             "srid": 4326
-        }
+        }"""
 
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = json.loads(json_payload)
+        serializer = LocationSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
 
         # Get the data from the API
+        url = reverse('locations')
         response = self.client.get(
             url, {'postcode': 'CB11AZ', 'range_distance': 1000})
 
@@ -683,13 +704,12 @@ class TestLocationView(LandAvailabilityAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
-class TestLocationDetailsView(LandAvailabilityAPITestCase):
+class TestLocationDetailsView(LandAvailabilityUserAPITestCase):
     @pytest.mark.django_db
     def test_location_details(self):
         # Create test Location
-        url = reverse('locations')
 
-        data = {
+        json_payload = """{
             "uprn": "010090969113",
             "ba_ref": "00004870000113",
             "name": "Test Location 1",
@@ -711,10 +731,12 @@ class TestLocationDetailsView(LandAvailabilityAPITestCase):
                 ]
             },
             "srid": 4326
-        }
+        }"""
 
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = json.loads(json_payload)
+        serializer = LocationSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
 
         url = reverse('location-details', kwargs={'uprn': '010090969113'})
         response = self.client.get(url)

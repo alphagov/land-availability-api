@@ -14,6 +14,7 @@ from .serializers import (
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
+from .permissions import IsAdminOrReadOnlyUser
 
 
 class BusStopCreateView(APIView):
@@ -178,7 +179,7 @@ class SchoolCreateView(APIView):
 
 
 class LocationView(APIView):
-    permission_classes = (IsAdminUser, )
+    permission_classes = (IsAdminOrReadOnlyUser, )
 
     def post(self, request, format=None):
         serializer = LocationSerializer(data=request.data)
