@@ -479,6 +479,7 @@ class TestLocationSerializer(TestCase):
                 "owner": "Test owner",
                 "unique_asset_id": "10910",
                 "full_address": "Full address of St James School",
+                "estimated_floor_space": 140.24,
                 "geom": {
                     "type": "MultiPolygon",
                     "coordinates": [

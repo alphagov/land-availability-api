@@ -483,6 +483,8 @@ class LocationSerializer(serializers.ModelSerializer):
         location.authority = validated_data.get('authority')
         location.owner = validated_data.get('owner')
         location.unique_asset_id = validated_data.get('unique_asset_id')
+        location.full_address = validated_data.get('full_address')
+        location.estimated_floor_space = validated_data.get('total_area')
 
         location.save()
         return location
