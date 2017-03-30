@@ -10,7 +10,8 @@ from rest_framework.test import APIClient
 from api.models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
     Motorway, Substation, OverheadLine, School, Location)
-from api.serializers import LocationSerializer, CodePointSerializer
+from api.serializers import (
+    LocationSerializer, CodePointSerializer, BroadbandSerializer)
 import json
 
 
@@ -743,3 +744,84 @@ class TestLocationDetailsView(LandAvailabilityUserAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()['uprn'], '010090969113')
+
+    @pytest.mark.django_db
+    def test_location_details_has_broadband(self):
+        # Create test CodePoint
+
+        json_payload = """{
+                "postcode": "CB11AZ",
+                "quality": "10",
+                "country": "E92000001",
+                "nhs_region": "E19000001",
+                "nhs_health_authority": "E18000002",
+                "county": "",
+                "district": "E08000002",
+                "ward": "E05000681",
+                "point": {
+                    "type": "Point",
+                    "coordinates": [0.13088953859958197, 52.20513657706537]
+                },
+                "srid": 4326
+            }"""
+
+        data = json.loads(json_payload)
+        serializer = CodePointSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+
+        # Create test Broadband
+
+        json_payload = """{
+            "postcode": "CB11AZ",
+            "speed_30_mb_percentage": 50,
+            "avg_download_speed": 10.5,
+            "min_download_speed": 2.8,
+            "max_download_speed": 12.3,
+            "avg_upload_speed": 0.5,
+            "min_upload_speed": 0.3,
+            "max_upload_speed": 1.1
+        }"""
+
+        data = json.loads(json_payload)
+        serializer = BroadbandSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+
+        # Create test Locations
+
+        json_payload = """{
+            "uprn": "010090969113",
+            "ba_ref": "00004870000113",
+            "name": "Test Location 1",
+            "authority": "Cambridge City Council",
+            "owner": "",
+            "unique_asset_id": "",
+            "geom": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [0.13153553009033203, 52.205765731674575],
+                            [0.13143360614776609, 52.20569340742784],
+                            [0.13174474239349365, 52.20561122064091],
+                            [0.13180643320083618, 52.20569669489615],
+                            [0.13153553009033203, 52.205765731674575]
+                        ]
+                    ]
+                ]
+            },
+            "srid": 4326
+        }"""
+
+        data = json.loads(json_payload)
+        serializer = LocationSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+
+        url = reverse('location-details', kwargs={'uprn': '010090969113'})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()['uprn'], '010090969113')
+        self.assertEqual(response.json()['nearest_broadband_fast'], True)
