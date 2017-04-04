@@ -692,6 +692,198 @@ class TestLocationViewGet(LandAvailabilityUserAPITestCase):
         self.assertEqual(len(response.json()), 3)
 
     @pytest.mark.django_db
+    def test_location_view_get_locations_selected_area(self):
+        # Create test Locations
+
+        json_payload = """{
+            "uprn": "010090969113",
+            "ba_ref": "00004870000113",
+            "name": "Test Location 1",
+            "authority": "Cambridge City Council",
+            "owner": "",
+            "unique_asset_id": "",
+            "geom": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [0.13153553009033203, 52.205765731674575],
+                            [0.13143360614776609, 52.20569340742784],
+                            [0.13174474239349365, 52.20561122064091],
+                            [0.13180643320083618, 52.20569669489615],
+                            [0.13153553009033203, 52.205765731674575]
+                        ]
+                    ]
+                ]
+            },
+            "srid": 4326
+        }"""
+
+        data = json.loads(json_payload)
+        serializer = LocationSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+
+        json_payload = """{
+            "uprn": "200004166552",
+            "ba_ref": "00004310025025",
+            "name": "Test Location 2",
+            "authority": "Cambridge City Council",
+            "owner": "",
+            "unique_asset_id": "",
+            "geom": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [0.13197273015975952, 52.20564902658178],
+                            [0.13188958168029785, 52.20554218362242],
+                            [0.13214707374572754, 52.205476433981275],
+                            [0.13222217559814453, 52.205583277098725],
+                            [0.13197273015975952, 52.20564902658178]
+                        ]
+                    ]
+                ]
+            },
+            "srid": 4326
+        }"""
+
+        data = json.loads(json_payload)
+        serializer = LocationSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+
+        # Get the data from the API
+        url = reverse('locations')
+        response = self.client.get(
+            url, {
+                'polygon': """[
+                    [
+                        [
+                            0.0858306884765625,
+                            52.18308960259887
+                        ],
+                        [
+                            0.1786994934082031,
+                            52.18308960259887
+                        ],
+                        [
+                            0.1786994934082031,
+                            52.22485521518378
+                        ],
+                        [
+                            0.0858306884765625,
+                            52.22485521518378
+                        ],
+                        [
+                            0.0858306884765625,
+                            52.18308960259887
+                        ]
+                    ]
+                ]"""
+            }
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 2)
+
+    @pytest.mark.django_db
+    def test_location_view_get_no_locations_outside_selected_area(self):
+        # Create test Locations
+
+        json_payload = """{
+            "uprn": "010090969113",
+            "ba_ref": "00004870000113",
+            "name": "Test Location 1",
+            "authority": "Cambridge City Council",
+            "owner": "",
+            "unique_asset_id": "",
+            "geom": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [0.13153553009033203, 52.205765731674575],
+                            [0.13143360614776609, 52.20569340742784],
+                            [0.13174474239349365, 52.20561122064091],
+                            [0.13180643320083618, 52.20569669489615],
+                            [0.13153553009033203, 52.205765731674575]
+                        ]
+                    ]
+                ]
+            },
+            "srid": 4326
+        }"""
+
+        data = json.loads(json_payload)
+        serializer = LocationSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+
+        json_payload = """{
+            "uprn": "200004166552",
+            "ba_ref": "00004310025025",
+            "name": "Test Location 2",
+            "authority": "Cambridge City Council",
+            "owner": "",
+            "unique_asset_id": "",
+            "geom": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [0.13197273015975952, 52.20564902658178],
+                            [0.13188958168029785, 52.20554218362242],
+                            [0.13214707374572754, 52.205476433981275],
+                            [0.13222217559814453, 52.205583277098725],
+                            [0.13197273015975952, 52.20564902658178]
+                        ]
+                    ]
+                ]
+            },
+            "srid": 4326
+        }"""
+
+        data = json.loads(json_payload)
+        serializer = LocationSerializer(data=data)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+
+        # Get the data from the API
+        url = reverse('locations')
+        response = self.client.get(
+            url, {
+                'polygon': """[
+                    [
+                        [
+                            0.05046844482421874,
+                            52.3130964236375
+                        ],
+                        [
+                            0.142822265625,
+                            52.3130964236375
+                        ],
+                        [
+                            0.142822265625,
+                            52.343100382549984
+                        ],
+                        [
+                            0.05046844482421874,
+                            52.343100382549984
+                        ],
+                        [
+                            0.05046844482421874,
+                            52.3130964236375
+                        ]
+                    ]
+                ]"""
+            }
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 0)
+
+    @pytest.mark.django_db
     def test_location_view_get_locations_no_params(self):
         url = reverse('locations')
         response = self.client.get(url)
