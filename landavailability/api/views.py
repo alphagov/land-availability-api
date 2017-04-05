@@ -14,6 +14,7 @@ from .serializers import (
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
+import json
 from .permissions import IsAdminOrReadOnlyUser
 
 
@@ -193,8 +194,23 @@ class LocationView(APIView):
     def get(self, request, *args, **kwargs):
         postcode = request.query_params.get('postcode')
         range_distance = request.query_params.get('range_distance')
+        polygon = request.query_params.get('polygon')
 
-        if postcode and range_distance:
+        if polygon:
+            # Build a Polygon instance using the coordinates passed
+            # as parameters in the 'polygon' field of the query string
+            json_geometry = {
+                "type": "Polygon",
+                "coordinates": json.loads(polygon)
+            }
+
+            geometry = GEOSGeometry(json.dumps(json_geometry), srid=4326)
+
+            # Get all the locations that intersect the given polygon
+            locations = Location.objects.filter(geom__intersects=geometry)
+            serializer = LocationSerializer(locations, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        elif postcode and range_distance:
             # Normalise postcode first
             postcode = postcode.replace(' ', '').upper()
 
