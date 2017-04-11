@@ -59,7 +59,8 @@ class TestAddressCommand(TestCase):
             address.point,
             Point(
                 float("-1.83356713993623"),
-                float("55.4168769443259")))
+                float("55.4168769443259"),
+                srid=4326))
 
 
 class TestBusStopCommand(TestCase):
