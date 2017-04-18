@@ -520,3 +520,23 @@ class Location(models.Model):
             self.update_nearest_metrotube()
 
         super(Location, self).save(*args, **kwargs)
+
+    def get_area_requirements(pupils=0, school_type='primary', post16=0):
+        area_req = 0
+
+        if school_type == 'secondary':
+            if post16 > 0:
+                under16 = pupils - post16
+                area_req = (1050.0 + (6.3 * under16)) + (350 + (7 * post16))
+            else:
+                area_req = 1050.0 + (6.3 * pupils)
+        else:
+            area_req = 350.0 + (4.1 * pupils)
+
+        upper_area_req = round(area_req * 1.5, 2)
+        lower_area_req = round(area_req * 0.95, 2)
+
+        return {
+            'lower_area_req': lower_area_req,
+            'upper_area_req': upper_area_req
+        }
