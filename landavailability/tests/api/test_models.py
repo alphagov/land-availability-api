@@ -1762,3 +1762,23 @@ class TestMetroTubeModel(TestCase):
         self.assertEqual(
             updated_location.nearest_metrotube.atco_code, '1800ZZMAECC4')
         self.assertIsNotNone(updated_location.nearest_metrotube_distance)
+
+
+class TestLocationSiteRequirements(TestCase):
+    def test_calculate_area_requirements_primary(self):
+        area_requirements = Location.get_area_requirements(
+            pupils=100, school_type='primary', post16=0)
+        self.assertEqual(area_requirements['lower_area_req'], 722.0)
+        self.assertEqual(area_requirements['upper_area_req'], 1140.0)
+
+    def test_calculate_area_requirements_secondary(self):
+        area_requirements = Location.get_area_requirements(
+            pupils=100, school_type='secondary', post16=0)
+        self.assertEqual(area_requirements['lower_area_req'], 1596.0)
+        self.assertEqual(area_requirements['upper_area_req'], 2520.0)
+
+    def test_calculate_area_requirements_secondary_post16(self):
+        area_requirements = Location.get_area_requirements(
+            pupils=100, school_type='secondary', post16=32)
+        self.assertEqual(area_requirements['lower_area_req'], 1949.78)
+        self.assertEqual(area_requirements['upper_area_req'], 3078.60)
