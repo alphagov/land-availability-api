@@ -1,5 +1,5 @@
 from django.contrib.gis.db import models
-from django.contrib.gis.db.models.functions import Distance
+from django.contrib.gis.db.models.functions import Distance, Area
 from django.contrib.gis.measure import D
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
@@ -540,3 +540,11 @@ class Location(models.Model):
             'lower_area_req': lower_area_req,
             'upper_area_req': upper_area_req
         }
+
+    def get_geom_area(self):
+        '''Returns the area of the 'geom', in m^2
+        '''
+        # transform whatever srid it currently is (the default is what it was
+        # created with) to British National Grid SRID of 27700 because that
+        # uses meters as the units.
+        return self.geom.transform(27700, clone=True).area
