@@ -1124,8 +1124,11 @@ class TestLocationModel(TestCase):
         saved_location = Location.objects.first()
 
         # If I'd drawn the polygon correctly, it would be a square mile
-        # (= 2589988.11 m^2), so 4500000 is the right order of magnitude
-        self.assertEqual(int(saved_location.get_geom_area()), 4532170)
+        # (= 2589988.11 m^2), so 4500000 is the right order of magnitude.
+        # Rounding to nearest 1000, due to small differences in calcs between
+        # different machines.
+        self.assertEqual(round(saved_location.get_geom_area(), -3),
+                         round(4532170, -3))
 
     @pytest.mark.django_db
     def test_metrotube_pre_delete_signal(self):
