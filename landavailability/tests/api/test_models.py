@@ -1090,6 +1090,47 @@ class TestLocationModel(TestCase):
         self.assertTrue(saved_location.nearest_school_distance > 0)
 
     @pytest.mark.django_db
+    def test_update_geom_area_on_new_location(self):
+        location = Location()
+        location.name = 'Test Location'
+        # city of london, very roughly
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-0.11136531829833984, 51.510708962562205],
+                                [-0.1139402389526367, 51.51936190593901],
+                                [-0.11316776275634764, 51.52165839880962],
+                                [-0.08759021759033203, 51.525503429911595],
+                                [-0.08381366729736328, 51.525984035971305],
+                                [-0.07411479949951172, 51.52026983556635],
+                                [-0.06767749786376953, 51.50883928355577],
+                                [-0.07428646087646484, 51.5091598054062],
+                                [-0.07497310638427733, 51.50680925947236],
+                                [-0.09368419647216795, 51.51017477638982],
+                                [-0.11136531829833984, 51.510708962562205]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        saved_location = Location.objects.first()
+
+        # If I'd drawn the polygon correctly, it would be a square mile
+        # (= 2589988.11 m^2), so 4500000 is the right order of magnitude.
+        # Rounding to nearest 1000, due to small differences in calcs between
+        # different machines.
+        self.assertEqual(round(saved_location.get_geom_area(), -3),
+                         round(4532170, -3))
+
+    @pytest.mark.django_db
     def test_metrotube_pre_delete_signal(self):
         metrotube = MetroTube()
         metrotube.atco_code = "1800ZZMAECC4"
