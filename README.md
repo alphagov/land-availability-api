@@ -4,6 +4,7 @@ API backend for Land Availability tool
 # Continuous integration status
 
 [![Travis-CI Status](https://secure.travis-ci.org/alphagov/land-availability-api.png?branch=master)](http://travis-ci.org/#!/alphagov/land-availability-api)
+[![Coverage Status](https://coveralls.io/repos/github/alphagov/land-availability-api/badge.svg?branch=coveralls)](https://coveralls.io/github/alphagov/land-availability-api?branch=coveralls)
 
 # PostgreSQL Setup
 
