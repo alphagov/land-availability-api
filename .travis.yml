@@ -12,7 +12,7 @@ env:
   global:
   - SECRET_KEY="abcd1234"
   - DATABASE_URL=postgres://postgres@localhost:5432/landavailability_test
-script: pytest -v
+script: pytest -v --cov-report= --cov=api tests/
 deploy:
   provider: heroku
   buildpack: https://github.com/cyberdelia/heroku-geo-buildpack.git
