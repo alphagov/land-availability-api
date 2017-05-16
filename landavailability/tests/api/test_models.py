@@ -986,10 +986,11 @@ class TestLocationModel(TestCase):
         self.assertEqual(changed_location.nearest_greenbelt_distance, 0)
 
     @pytest.mark.django_db
-    def test_school_pre_delete_signal(self):
+    def test_primary_school_pre_delete_signal(self):
         school = School()
         school.urn = "106451"
         school.school_name = "St John's CofE Primary School"
+        school.school_type = 'PRIMARY'
         school_geometry = """
             {
                 "type": "Point",
@@ -1028,22 +1029,78 @@ class TestLocationModel(TestCase):
         """
         location.geom = GEOSGeometry(location_geometry, srid=4326)
         location.point = location.geom.centroid
-        location.nearest_school = school
+        location.nearest_primary_school = school
         location.save()
 
-        self.assertIsNotNone(location.nearest_school)
+        self.assertIsNotNone(location.nearest_primary_school)
 
         school.delete()
 
         changed_location = Location.objects.first()
-        self.assertIsNone(changed_location.nearest_school)
-        self.assertEqual(changed_location.nearest_school_distance, 0)
+        self.assertIsNone(changed_location.nearest_primary_school)
+        self.assertEqual(changed_location.nearest_primary_school_distance, 0)
 
     @pytest.mark.django_db
-    def test_update_nearest_school_on_new_location(self):
+    def test_secondary_school_pre_delete_signal(self):
+        school = School()
+        school.urn = "106451"
+        school.school_name = "St John's CofE Secondary School"
+        school.school_type = 'SECONDARY'
+        school_geometry = """
+            {
+                "type": "Point",
+                "coordinates": [-2.6838539645453285, 53.53776337179745]
+            }
+        """
+        school.point = GEOSGeometry(school_geometry, srid=4326)
+        school.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.684158138678509, 53.53842948176405],
+                                [-2.684118888947563, 53.53842835811194],
+                                [-2.6841037940126786, 53.53842799507081],
+                                [-2.6835457107016185, 53.53841343374206],
+                                [-2.683529151865655, 53.53838443923376],
+                                [-2.6834208871023963, 53.53834344914247],
+                                [-2.6836018736049394, 53.53816230293524],
+                                [-2.6837828991058927, 53.53803793091213],
+                                [-2.6840808896155326, 53.53823483105565],
+                                [-2.684095259361201, 53.53822625129759],
+                                [-2.6841214162784985, 53.53821082109647],
+                                [-2.6841828545078785, 53.538231143106],
+                                [-2.684158138678509, 53.53842948176405]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.nearest_secondary_school = school
+        location.save()
+
+        self.assertIsNotNone(location.nearest_secondary_school)
+
+        school.delete()
+
+        changed_location = Location.objects.first()
+        self.assertIsNone(changed_location.nearest_secondary_school)
+        self.assertEqual(changed_location.nearest_secondary_school_distance, 0)
+
+    @pytest.mark.django_db
+    def test_update_nearest_primary_school_on_new_location(self):
         school = School()
         school.urn = "106451"
         school.school_name = "St John's CofE Primary School"
+        school.school_type = 'PRIMARY'
         school_geometry = """
             {
                 "type": "Point",
@@ -1086,8 +1143,59 @@ class TestLocationModel(TestCase):
 
         saved_location = Location.objects.first()
 
-        self.assertIsNotNone(saved_location.nearest_school)
-        self.assertTrue(saved_location.nearest_school_distance > 0)
+        self.assertIsNotNone(saved_location.nearest_primary_school)
+        self.assertTrue(saved_location.nearest_primary_school_distance > 0)
+
+    @pytest.mark.django_db
+    def test_update_nearest_secondary_school_on_new_location(self):
+        school = School()
+        school.urn = "106451"
+        school.school_name = "St John's CofE Secondary School"
+        school.school_type = 'SECONDARY'
+        school_geometry = """
+            {
+                "type": "Point",
+                "coordinates": [-2.6838539645453285, 53.53776337179745]
+            }
+        """
+        school.point = GEOSGeometry(school_geometry, srid=4326)
+        school.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.684158138678509, 53.53842948176405],
+                                [-2.684118888947563, 53.53842835811194],
+                                [-2.6841037940126786, 53.53842799507081],
+                                [-2.6835457107016185, 53.53841343374206],
+                                [-2.683529151865655, 53.53838443923376],
+                                [-2.6834208871023963, 53.53834344914247],
+                                [-2.6836018736049394, 53.53816230293524],
+                                [-2.6837828991058927, 53.53803793091213],
+                                [-2.6840808896155326, 53.53823483105565],
+                                [-2.684095259361201, 53.53822625129759],
+                                [-2.6841214162784985, 53.53821082109647],
+                                [-2.6841828545078785, 53.538231143106],
+                                [-2.684158138678509, 53.53842948176405]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        saved_location = Location.objects.first()
+
+        self.assertIsNotNone(saved_location.nearest_secondary_school)
+        self.assertTrue(saved_location.nearest_secondary_school_distance > 0)
 
     @pytest.mark.django_db
     def test_update_geom_area_on_new_location(self):
@@ -1701,10 +1809,11 @@ class TestGreenbeltModel(TestCase):
 
 class TestSchoolModel(TestCase):
     @pytest.mark.django_db
-    def test_update_location_no_school(self):
+    def test_update_location_no_primary_school(self):
         school = School()
         school.urn = "106451"
         school.school_name = "St John's CofE Primary School"
+        school.school_type = 'PRIMARY'
         school_geometry = """
             {
                 "type": "Point",
@@ -1748,8 +1857,60 @@ class TestSchoolModel(TestCase):
         school.update_close_locations()
 
         updated_location = Location.objects.first()
-        self.assertEqual(updated_location.nearest_school.urn, '106451')
-        self.assertIsNotNone(updated_location.nearest_school_distance)
+        self.assertEqual(updated_location.nearest_primary_school.urn, '106451')
+        self.assertIsNotNone(updated_location.nearest_primary_school_distance)
+
+    @pytest.mark.django_db
+    def test_update_location_no_secondary_school(self):
+        school = School()
+        school.urn = "106451"
+        school.school_name = "St John's CofE Secondary School"
+        school.school_type = 'SECONDARY'
+        school_geometry = """
+            {
+                "type": "Point",
+                "coordinates": [-2.6838539645453285, 53.53776337179745]
+            }
+        """
+        school.point = GEOSGeometry(school_geometry, srid=4326)
+        school.save()
+
+        location = Location()
+        location.name = 'Test Location'
+        location_geometry = """
+            {
+                "type": "MultiPolygon",
+                "coordinates":
+                    [
+                        [
+                            [
+                                [-2.684158138678509, 53.53842948176405],
+                                [-2.684118888947563, 53.53842835811194],
+                                [-2.6841037940126786, 53.53842799507081],
+                                [-2.6835457107016185, 53.53841343374206],
+                                [-2.683529151865655, 53.53838443923376],
+                                [-2.6834208871023963, 53.53834344914247],
+                                [-2.6836018736049394, 53.53816230293524],
+                                [-2.6837828991058927, 53.53803793091213],
+                                [-2.6840808896155326, 53.53823483105565],
+                                [-2.684095259361201, 53.53822625129759],
+                                [-2.6841214162784985, 53.53821082109647],
+                                [-2.6841828545078785, 53.538231143106],
+                                [-2.684158138678509, 53.53842948176405]
+                            ]
+                        ]
+                    ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        school.update_close_locations()
+
+        updated_location = Location.objects.first()
+        self.assertEqual(updated_location.nearest_secondary_school.urn, '106451')
+        self.assertIsNotNone(updated_location.nearest_secondary_school_distance)
 
 
 class TestMetroTubeModel(TestCase):
