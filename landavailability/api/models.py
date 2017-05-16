@@ -324,13 +324,27 @@ class School(models.Model):
             annotate(distance=Distance('geom', self.point))
 
         for location in locations:
-            if location.nearest_school:
-                if location.distance.m > location.nearest_school_distance:
-                    continue
+            if self.school_type == 'PRIMARY':
+                if location.nearest_primary_school:
+                    if (
+                            location.distance.m >
+                            location.nearest_primary_school_distance):
+                        continue
 
-            location.nearest_school = self
-            location.nearest_school_distance = location.distance.m
-            location.save()
+                location.nearest_primary_school = self
+                location.nearest_primary_school_distance = location.distance.m
+                location.save()
+            elif self.school_type == 'SECONDARY':
+                if location.nearest_secondary_school:
+                    if (
+                            location.distance.m >
+                            location.nearest_secondary_school_distance):
+                        continue
+
+                location.nearest_secondary_school = self
+                location.nearest_secondary_school_distance = \
+                    location.distance.m
+                location.save()
 
 
 @receiver(pre_delete, sender=School, weak=False)
@@ -339,10 +353,17 @@ def school_predelete_handler(sender, instance, **kwargs):
     Whenever we try to delete a School, we search all the Locations
     using it and we remove the reference, so the object can be safely deleted.
     """
-    Location.objects.filter(nearest_school__id=instance.id).\
+    # Clean Primary schools
+    Location.objects.filter(nearest_primary_school__id=instance.id).\
         update(
-            nearest_school=None,
-            nearest_school_distance=0)
+            nearest_primary_school=None,
+            nearest_primary_school_distance=0)
+
+    # Clean Secondary schools
+    Location.objects.filter(nearest_secondary_school__id=instance.id).\
+        update(
+            nearest_secondary_school=None,
+            nearest_secondary_school_distance=0)
 
 
 class MetroTube(models.Model):
@@ -417,9 +438,14 @@ class Location(models.Model):
     nearest_greenbelt = models.ForeignKey(
         Greenbelt, on_delete=models.SET_NULL, null=True)
     nearest_greenbelt_distance = models.FloatField(null=True)  # meters
-    nearest_school = models.ForeignKey(
-        School, on_delete=models.SET_NULL, null=True)
-    nearest_school_distance = models.FloatField(null=True)  # meters
+    nearest_primary_school = models.ForeignKey(
+        School, on_delete=models.SET_NULL, null=True,
+        related_name='primary_school_locations')
+    nearest_primary_school_distance = models.FloatField(null=True)  # meters
+    nearest_secondary_school = models.ForeignKey(
+        School, on_delete=models.SET_NULL, null=True,
+        related_name='secondary_school_locations')
+    nearest_secondary_school_distance = models.FloatField(null=True)  # meters
     nearest_metrotube = models.ForeignKey(
         MetroTube, on_delete=models.SET_NULL, null=True)
     nearest_metrotube_distance = models.FloatField(null=True)  # meters
@@ -489,14 +515,25 @@ class Location(models.Model):
             self.nearest_greenbelt = greenbelts[0]
             self.nearest_greenbelt_distance = greenbelts[0].distance.m
 
-    def update_nearest_school(self, distance=1000):
+    def update_nearest_primary_school(self, distance=1000):
         schools = School.objects.filter(
-            point__dwithin=(self.geom, D(m=distance))).annotate(
+            point__dwithin=(self.geom, D(m=distance)),
+            school_type='PRIMARY').annotate(
             distance=Distance('point', self.geom)).order_by('distance')
 
         if len(schools) > 0:
-            self.nearest_school = schools[0]
-            self.nearest_school_distance = schools[0].distance.m
+            self.nearest_primary_school = schools[0]
+            self.nearest_primary_school_distance = schools[0].distance.m
+
+    def update_nearest_secondary_school(self, distance=1000):
+        schools = School.objects.filter(
+            point__dwithin=(self.geom, D(m=distance)),
+            school_type='SECONDARY').annotate(
+            distance=Distance('point', self.geom)).order_by('distance')
+
+        if len(schools) > 0:
+            self.nearest_secondary_school = schools[0]
+            self.nearest_secondary_school_distance = schools[0].distance.m
 
     def update_nearest_metrotube(self, distance=1000):
         metrotubes = MetroTube.objects.filter(
@@ -516,7 +553,8 @@ class Location(models.Model):
             self.update_nearest_motorway()
             self.update_nearest_broadband()
             self.update_nearest_greenbelt()
-            self.update_nearest_school()
+            self.update_nearest_primary_school()
+            self.update_nearest_secondary_school()
             self.update_nearest_metrotube()
 
         super(Location, self).save(*args, **kwargs)
