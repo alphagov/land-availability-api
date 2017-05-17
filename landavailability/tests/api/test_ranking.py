@@ -1,6 +1,7 @@
 from unittest import TestCase
 import json
 import os.path
+from pprint import pprint
 
 from pandas.util.testing import assert_frame_equal
 
@@ -88,14 +89,16 @@ class TestRankingsSameAsOla(TestCase):
             convert_df_to_elastic_results(
                 ranking.score_results(
                     convert_elastic_results_to_dicts(results),
-                    lower_site_req, upper_site_req),
+                    lower_site_req, upper_site_req,
+                    school_type=terms.get('build')),
                 terms
                 )
         self.assertEqual(ola_scored_result, scored_result)
 
     def test_scoring(self):
-        # we test just the scoring routine, by hacking ola to see what format
-        # the data was going in and out of it
+        # we test just the scoring routine. we hacked ola to see what format
+        # the data was going in and out of it and see if our version of it
+        # does the same thing.
         class Result(str):
             def to_dict(self):
                 return json.loads(self)
@@ -207,7 +210,11 @@ class TestRankingsSameAsOla(TestCase):
             ranking.school_site_size_range_from_terms(terms)
         scored_result = ranking.score_results(
             result_dicts,
-            lower_site_req, upper_site_req)
+            lower_site_req, upper_site_req, school_type=terms.get('build'))
+        pprint('OLA:')
+        pprint(ola_scored_result)
+        pprint('Our func:')
+        pprint(scored_result)
         assert_frame_equal(ola_scored_result, scored_result)
 
 
