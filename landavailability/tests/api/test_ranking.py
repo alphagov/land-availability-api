@@ -2,13 +2,15 @@ from unittest import TestCase
 import json
 import os.path
 from pprint import pprint
+from collections import OrderedDict
 
-from pandas.util.testing import assert_frame_equal
+import pandas as pd
+from pandas.util.testing import assert_frame_equal, assert_series_equal
 
 from api import ranking
 
 
-class TestRankingsSameAsOla(TestCase):
+class TestRanking(TestCase):
     def _test_scoring_with_elastic_search_conversions(self):
         # i.e. we wrap the scoring routing with ola-specific stuff so that
         # we can check the result directly with the the ola result
@@ -164,7 +166,6 @@ class TestRankingsSameAsOla(TestCase):
         #   pprint(df_final.to_dict())
         # and move dist and area_suitable to the end, to fix ordering that got
         # lost during the to_dict.
-        import pandas as pd
         expected_scored_result = pd.DataFrame({
             'address': {0: None, 1: None},
             'authority': {0: 'Oldham', 1: 'Oldham'},
@@ -213,6 +214,205 @@ class TestRankingsSameAsOla(TestCase):
         pprint('Our func:')
         pprint(scored_result)
         assert_frame_equal(expected_scored_result, scored_result)
+
+    def test_calculate_is_area_suitable(self):
+        df = pd.DataFrame({
+            'geoattributes.AREA': {0: 1000.0, 1: 2000.0, 2: 3000.0},
+            })
+        ranking.calculate_is_area_suitable(
+            df, lower_site_req=1900.0, upper_site_req=2500.0)
+        assert_frame_equal(
+            df,
+            pd.DataFrame(OrderedDict((
+                ('geoattributes.AREA', {0: 1000.0, 1: 2000.0, 2: 3000.0}),
+                ('area_suitable', {0: False, 1: True, 2: False}),
+            ))))
+
+    def test_z_score_scaling(self):
+        df = pd.DataFrame({
+            'area_suitable': {0: 1.0, 1: 1.0, 2: 1.0},
+            'geoattributes.BROADBAND': {0: 67.0, 1: 100.0, 2: 0.0},
+            'geoattributes.COVERAGE BY GREENBELT': {0: 0.0, 1: 0.0, 2: 0.0},
+            })
+        ranking.z_score_scaling(df)
+        pprint(df.to_dict())
+        self.assertEqual(
+            df.to_dict(),
+            {'area_suitable': {0: 1.0, 1: 1.0, 2: 1.0},
+             'geoattributes.BROADBAND': {0: 67.0, 1: 100.0, 2: 0.0},
+             'geoattributes.BROADBAND_zscore': {0: 0.2724100132220425,
+                                                1: 1.0656038752509309,
+                                                2: -1.3380138884729731},
+             'geoattributes.COVERAGE BY GREENBELT': {0: 0.0, 1: 0.0, 2: 0.0},
+             'geoattributes.COVERAGE BY GREENBELT_zscore':
+                 {0: 0.0, 1: 0.0, 2: 0.0},
+             })
+
+    def test_rescale(self):
+        df = pd.DataFrame({
+            'area_suitable': {0: True, 1: True, 2: False},
+            'geoattributes.BROADBAND': {0: 65, 1: 100.0, 2: 0.0},
+            'geoattributes.COVERAGE BY GREENBELT': {0: 0.0, 1: 0.0, 2: 0.0},
+            'geoattributes.DISTANCE TO BUS STOP': {0: 1.0, 1: 1.0, 2: 1.0},
+            })
+        df_out = ranking.rescale_columns_0_to_1(df)
+        df_out.applymap(lambda x: round(x, 2))
+        pprint(df_out.to_dict())
+        assert_frame_equal(
+            df_out, pd.DataFrame(OrderedDict([
+                ('area_suitable', {0: 1.0, 1: 1.0, 2: 0.0}),
+                ('geoattributes.BROADBAND', {0: 0.65, 1: 1.0, 2: 0.0}),
+                ('geoattributes.COVERAGE BY GREENBELT', {0: 0.0, 1: 0.0, 2: 0.0}),
+                ('geoattributes.DISTANCE TO BUS STOP', {0: 0.0, 1: 0.0, 2: 0.0}),
+                ]))
+            )
+
+    def test_flip_columns_primary_school(self):
+        df = pd.DataFrame({
+            'area_suitable': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.BROADBAND': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.COVERAGE BY GREENBELT': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO BUS STOP': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO METRO STATION': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO MOTORWAY JUNCTION': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO OVERHEAD LINE': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO PRIMARY SCHOOL': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO RAIL STATION': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO SECONDARY SCHOOL': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO SUBSTATION': {0: 0.0, 1: 0.6, 2: 1.0},
+            })
+        ranking.flip_columns_so_1_is_always_best(
+            df, school_type='primary_school')
+        pprint(df.to_dict())
+        assert_frame_equal(df, pd.DataFrame({
+            'area_suitable': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.BROADBAND': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.COVERAGE BY GREENBELT': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO BUS STOP': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO METRO STATION': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO MOTORWAY JUNCTION': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO OVERHEAD LINE': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO PRIMARY SCHOOL': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO RAIL STATION': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO SECONDARY SCHOOL': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO SUBSTATION': {0: 1.0, 1: 0.4, 2: 0.0},
+            }))
+
+    def test_flip_columns_secondary_school(self):
+        df = pd.DataFrame({
+            'area_suitable': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.BROADBAND': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.COVERAGE BY GREENBELT': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO BUS STOP': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO METRO STATION': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO MOTORWAY JUNCTION': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO OVERHEAD LINE': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO PRIMARY SCHOOL': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO RAIL STATION': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO SECONDARY SCHOOL': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO SUBSTATION': {0: 0.0, 1: 0.6, 2: 1.0},
+            })
+        ranking.flip_columns_so_1_is_always_best(
+            df, school_type='secondary_school')
+        pprint(df.to_dict())
+        assert_frame_equal(df, pd.DataFrame({
+            'area_suitable': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.BROADBAND': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.COVERAGE BY GREENBELT': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO BUS STOP': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO METRO STATION': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO MOTORWAY JUNCTION': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO OVERHEAD LINE': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO PRIMARY SCHOOL': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO RAIL STATION': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO SECONDARY SCHOOL': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO SUBSTATION': {0: 1.0, 1: 0.4, 2: 0.0},
+            }))
+
+    def test_calculate_score(self):
+        df = pd.DataFrame({
+            'area_suitable':         {0: 0.0,  1: 0.0, 2: 0.0, 3: 1.0},
+            'BROADBAND':             {0: 0.67, 1: 1.0, 2: 0.0, 3: 1.0},
+            'COVERAGE BY GREENBELT': {0: 0.0,  1: 1.0, 2: 0.0, 3: 1.0},
+            })
+        ranking.calculate_score(df)
+        print(df['score'])
+        assert_series_equal(
+            df['score'],
+            pd.Series([0.67, 1.414214, 0.0, 1.732051], name='score'))
+
+    def test_school_site_size_range_from_terms(self):
+        terms = dict(
+            pupils=210,
+            post16=0,
+            build='primary_school'
+            )
+        self.assertEqual(
+            ranking.school_site_size_range_from_terms(terms),
+            (1150.45, 1816.5))
+
+    def test_school_site_size_range(self):
+        self.assertEqual(
+            ranking.school_site_size_range(
+                num_pupils=210,
+                num_pupils_post16=0,
+                school_type='primary_school'),
+            (1150.45, 1816.5))
+
+
+class TestSchoolSiteSize(TestCase):
+    def test_primary_0(self):
+        self.assertEqual(
+            ranking.school_site_size(num_pupils=0,
+                                     num_pupils_post16=0,
+                                     school_type='primary_school'),
+            350.0)
+
+    def test_primary_single_form_entry(self):
+        num_pupils = 30 * 7
+        size = ranking.school_site_size(num_pupils=num_pupils,
+                                        num_pupils_post16=0,
+                                        school_type='primary_school')
+        self.assertEqual(size, 1211.0)
+        space_per_pupil = round(size / num_pupils, 2)
+        self.assertEqual(space_per_pupil, 5.77)
+
+    def test_secondary_0(self):
+        self.assertEqual(
+            ranking.school_site_size(num_pupils=0,
+                                     num_pupils_post16=0,
+                                     school_type='secondary_school'),
+            1050.0)
+
+    def test_secondary_single_form_entry(self):
+        num_pupils = 30 * 5
+        size = ranking.school_site_size(num_pupils=num_pupils,
+                                        num_pupils_post16=0,
+                                        school_type='secondary_school')
+        self.assertEqual(size, 1995.0)
+        space_per_pupil = round(size / num_pupils, 2)
+        self.assertEqual(space_per_pupil, 13.3)
+
+    def test_secondary_with_210(self):
+        # for direct comparison with the 210 below, where 60 are over 16
+        # rather than under 16.
+        num_pupils = 30 * 7
+        size = ranking.school_site_size(num_pupils=num_pupils,
+                                        num_pupils_post16=0,
+                                        school_type='secondary_school')
+        self.assertEqual(size, 2373.0)
+        space_per_pupil = round(size / num_pupils, 2)
+        self.assertEqual(space_per_pupil, 11.3)
+
+    def test_secondary_single_form_entry_with_sixth_form(self):
+        num_pupils = 30 * 7
+        num_pupils_post16 = 30 * 2
+        size = ranking.school_site_size(num_pupils=num_pupils,
+                                        num_pupils_post16=num_pupils_post16,
+                                        school_type='secondary_school')
+        self.assertEqual(size, 2765.0)
+        space_per_pupil = round(size / num_pupils, 2)
+        self.assertEqual(space_per_pupil, 13.17)
 
 
 # OLA functions #

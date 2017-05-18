@@ -1,4 +1,5 @@
 import pandas as pd
+from pandas.io.json import json_normalize
 import numpy as np
 
 log = __import__('logging').getLogger(__file__)
@@ -21,7 +22,10 @@ def school_site_size_range(**kwargs):
 def school_site_size(num_pupils=0,
                      num_pupils_post16=0,
                      school_type='primary_school'):
-    '''Return the expected floor space (m^2) for the given parameters'''
+    '''Return the expected floor space (m^2) for the given parameters.
+    NB pupils post-16 should be included both figures 'num_pupils' and
+    'num_pupils_post16'.
+    '''
     if school_type == 'secondary_school':
         # Deal with sixth form additional space
         if num_pupils_post16 > 0:
@@ -37,16 +41,19 @@ def school_site_size(num_pupils=0,
     return 0
 
 def score_results(result_dicts, lower_site_req, upper_site_req, school_type):
-    from pandas.io.json import json_normalize
-    df = json_normalize(result_dicts)  # result_dicts was 'e' in ola
-    df.apply(lambda x: pd.to_numeric(x, errors='ignore'))
-    df.fillna(0)
+    # convert json results to a DataFrame
+    df = json_normalize(result_dicts)
+
+    # '67' -> 67
     df['geoattributes.BROADBAND'] = \
         pd.to_numeric(df['geoattributes.BROADBAND'], errors='ignore')
-    df['area_suitable'] = \
-        (df['geoattributes.AREA'] > lower_site_req) & \
-        (df['geoattributes.AREA'] < upper_site_req)
+    # this does all the columns but isn't needed
+    # df = df.apply(lambda x: pd.to_numeric(x, errors='ignore'))
 
+    # work out if the site size is suitable
+    calculate_is_area_suitable(df, lower_site_req, upper_site_req)
+
+    # filter to only the columns that we'll score against
     cols = [
         'area_suitable',
         'geoattributes.BROADBAND',
@@ -78,28 +85,55 @@ def score_results(result_dicts, lower_site_req, upper_site_req, school_type):
     # (not really necessary because we scale it again, but useful for
     #  analysis)
     if False:
-        for col in cols:
-            if col == 'area_suitable':
-                continue
-            col_zscore = col + '_zscore'
-            # zscore calculation: x = (x - column_mean)/column_stdev
-            col_mean_normalized = df[col] - df[col].mean()
-            standard_deviation = df[col].std(ddof=0)
-            if standard_deviation == 0.0:
-                # can't divide by zero
-                df[col_zscore] = col_mean_normalized
-            else:
-                df[col_zscore] = col_mean_normalized / standard_deviation
-
-    df2['geoattributes.COVERAGE BY GREENBELT'].fillna(0, inplace=True)
+        z_score_scaling(df2)
 
     # Rescale minimum = 0 and maximum = 1 for each column
-    df3 = df2.apply(
+    df3 = rescale_columns_0_to_1(df2)
+
+    flip_columns_so_1_is_always_best(df3, school_type)
+
+    calculate_score(df3)
+
+    # bundle up the score and search result
+    df_final = json_normalize(result_dicts)
+    df_final = pd.concat([df_final, df3[['score']], df[['area_suitable']]],
+                         axis=1)
+    return df_final
+
+def calculate_is_area_suitable(df, lower_site_req, upper_site_req):
+    df['area_suitable'] = \
+        (df['geoattributes.AREA'] > lower_site_req) & \
+        (df['geoattributes.AREA'] < upper_site_req)
+
+def z_score_scaling(df):
+    '''Given inputs as rows of a dataframe, for every given column (apart from
+    'area_suitable'), this function scales the values to a z-score and stores
+    them in new columns '<column>_zscore'.
+    '''
+    for col in df.columns:
+        if col == 'area_suitable':
+            continue
+        col_zscore = col + '_zscore'
+        # zscore calculation: x = (x - column_mean)/column_stdev
+        col_mean_normalized = df[col] - df[col].mean()
+        standard_deviation = df[col].std(ddof=0)
+        if standard_deviation == 0.0:
+            # can't divide by zero
+            df[col_zscore] = col_mean_normalized
+        else:
+            df[col_zscore] = col_mean_normalized / standard_deviation
+
+
+def rescale_columns_0_to_1(df):
+    return df.apply(
         lambda x: (x.astype(float) - min(x)) / ((max(x) - min(x)) or 0.1),
         axis=0)
-    df3['geoattributes.COVERAGE BY GREENBELT'].fillna(0, inplace=True)
 
-    # flip value of some columns, so that 1 is always positive and 0 negative
+
+def flip_columns_so_1_is_always_best(df, school_type):
+    '''Given inputs as rows of a dataframe, scaled 0 to 1, flip value of
+    particular columns, so that 1 is always means a positive thing and 0
+    negative. Changes the df in-place.'''
     ideal_values = dict([
         ('area_suitable', 1),
         ('geoattributes.BROADBAND', 1),
@@ -115,18 +149,15 @@ def score_results(result_dicts, lower_site_req, upper_site_req, school_type):
             1 if school_type == 'primary_school' else 0),
         ('geoattributes.DISTANCE TO SUBSTATION', 0),
         ])
-    missing_ideal_values = set(df3.columns) - set(ideal_values)
+    missing_ideal_values = set(df.columns) - set(ideal_values)
     assert not missing_ideal_values
     columns_to_flip = [col for col, ideal_value in ideal_values.items()
                        if ideal_value == 0]
     for col in columns_to_flip:
-        df3[col] = df3[col].map(lambda x: 1.0 - x)
+        df[col] = df[col].map(lambda x: 1.0 - x)
 
-    # score
-    df3['score'] = np.linalg.norm(df3, axis=1)
-
-    # bundle up the score and search result
-    df_final = json_normalize(result_dicts)
-    df_final = pd.concat([df_final, df3[['score']], df[['area_suitable']]],
-                         axis=1)
-    return df_final
+def calculate_score(df):
+    '''Given inputs as rows of a dataframe, that are scaled 0 to 1, this
+    function appends a column 'score' for ranking. (Score: bigger=better)
+    '''
+    df['score'] = np.linalg.norm(df, axis=1)
