@@ -47,10 +47,8 @@ def score_results(result_dicts, lower_site_req, upper_site_req, school_type):
         (df['geoattributes.AREA'] > lower_site_req) & \
         (df['geoattributes.AREA'] < upper_site_req)
 
-    # x-score scaling
-    # (not really necessary because we scale it again, but useful for
-    #  analysis)
     cols = [
+        'area_suitable',
         'geoattributes.BROADBAND',
         'geoattributes.COVERAGE BY GREENBELT',
         'geoattributes.DISTANCE TO BUS STOP',
@@ -62,9 +60,29 @@ def score_results(result_dicts, lower_site_req, upper_site_req, school_type):
         'geoattributes.DISTANCE TO SECONDARY SCHOOL',
         'geoattributes.DISTANCE TO SUBSTATION']
     df2 = pd.concat([df[col] for col in cols], axis=1)
+
+    # TODO
+    # Check that distances are correctly either euclidean or network.
+    # Network:
+    #   'geoattributes.DISTANCE TO BUS STOP_zscore',
+    #   'geoattributes.DISTANCE TO METRO STATION_zscore',
+    #   'geoattributes.DISTANCE TO PRIMARY SCHOOL_zscore',
+    #   'geoattributes.DISTANCE TO RAIL STATION_zscore',
+    #   'geoattributes.DISTANCE TO SECONDARY SCHOOL_zscore'
+    # Euclidean:
+    #   'geoattributes.DISTANCE TO MOTORWAY JUNCTION',
+    #   'geoattributes.DISTANCE TO OVERHEAD LINE',
+    #   'geoattributes.DISTANCE TO SUBSTATION'
+
+    # z-score scaling
+    # (not really necessary because we scale it again, but useful for
+    #  analysis)
     if False:
         for col in cols:
+            if col == 'area_suitable':
+                continue
             col_zscore = col + '_zscore'
+            # zscore calculation: x = (x - column_mean)/column_stdev
             col_mean_normalized = df[col] - df[col].mean()
             standard_deviation = df[col].std(ddof=0)
             if standard_deviation == 0.0:
@@ -73,56 +91,6 @@ def score_results(result_dicts, lower_site_req, upper_site_req, school_type):
             else:
                 df[col_zscore] = col_mean_normalized / standard_deviation
 
-    # select columns we want to use for vector distance calculations
-    # df.columns =
-    # ['address',
-    #  'authority',
-    #  'centre.lat',
-    #  'centre.lon',
-    #  'footage',
-    #  'geoattributes.AREA',
-    #  'geoattributes.BROADBAND',
-    #  'geoattributes.COVERAGE BY GREENBELT',
-    #  'geoattributes.DISTANCE TO BUS STOP',
-    #  'geoattributes.DISTANCE TO METRO STATION',
-    #  'geoattributes.DISTANCE TO MOTORWAY JUNCTION',
-    #  'geoattributes.DISTANCE TO OVERHEAD LINE',
-    #  'geoattributes.DISTANCE TO PRIMARY SCHOOL',
-    #  'geoattributes.DISTANCE TO RAIL STATION',
-    #  'geoattributes.DISTANCE TO SECONDARY SCHOOL',
-    #  'geoattributes.DISTANCE TO SUBSTATION',
-    #  'geoattributes.FLOORSPACE',
-    #  'id',
-    #  'name',
-    #  'owner',
-    #  'postcode',
-    #  'region',
-    #  'structures',
-    #  'uprn',
-    #  'area_suitable',
-    #  'geoattributes.BROADBAND_zscore',
-    #  'geoattributes.COVERAGE BY GREENBELT_zscore',
-    #  'geoattributes.DISTANCE TO BUS STOP_zscore',
-    #  'geoattributes.DISTANCE TO METRO STATION_zscore',
-    #  'geoattributes.DISTANCE TO MOTORWAY JUNCTION_zscore',
-    #  'geoattributes.DISTANCE TO OVERHEAD LINE_zscore',
-    #  'geoattributes.DISTANCE TO PRIMARY SCHOOL_zscore',
-    #  'geoattributes.DISTANCE TO RAIL STATION_zscore',
-    #  'geoattributes.DISTANCE TO SECONDARY SCHOOL_zscore',
-    #  'geoattributes.DISTANCE TO SUBSTATION_zscore']
-    #
-    # [24:34]:
-    # ['area_suitable',
-    #  'geoattributes.BROADBAND_zscore',
-    #  'geoattributes.COVERAGE BY GREENBELT_zscore',
-    #  'geoattributes.DISTANCE TO BUS STOP_zscore',
-    #  'geoattributes.DISTANCE TO METRO STATION_zscore',
-    #  'geoattributes.DISTANCE TO MOTORWAY JUNCTION_zscore',
-    #  'geoattributes.DISTANCE TO OVERHEAD LINE_zscore',
-    #  'geoattributes.DISTANCE TO PRIMARY SCHOOL_zscore',
-    #  'geoattributes.DISTANCE TO RAIL STATION_zscore',
-    #  'geoattributes.DISTANCE TO SECONDARY SCHOOL_zscore']
-    #df2 = df.iloc[:, 24:34]
     df2['geoattributes.COVERAGE BY GREENBELT'].fillna(0, inplace=True)
 
     # Rescale minimum = 0 and maximum = 1 for each column
@@ -131,57 +99,34 @@ def score_results(result_dicts, lower_site_req, upper_site_req, school_type):
         axis=0)
     df3['geoattributes.COVERAGE BY GREENBELT'].fillna(0, inplace=True)
 
-    # create 'ideal' z-score
-    df3['dist'] = df3.apply(lambda x: dist(x, school_type=school_type),
-                            axis=1)
+    # flip value of some columns, so that 1 is always positive and 0 negative
+    ideal_values = dict([
+        ('area_suitable', 1),
+        ('geoattributes.BROADBAND', 1),
+        ('geoattributes.COVERAGE BY GREENBELT', 0),
+        ('geoattributes.DISTANCE TO BUS STOP', 1),
+        ('geoattributes.DISTANCE TO METRO STATION', 1),
+        ('geoattributes.DISTANCE TO MOTORWAY JUNCTION', 0),
+        ('geoattributes.DISTANCE TO OVERHEAD LINE', 0),
+        ('geoattributes.DISTANCE TO PRIMARY SCHOOL',
+            1 if school_type == 'secondary_school' else 0),
+        ('geoattributes.DISTANCE TO RAIL STATION', 1),
+        ('geoattributes.DISTANCE TO SECONDARY SCHOOL',
+            1 if school_type == 'primary_school' else 0),
+        ('geoattributes.DISTANCE TO SUBSTATION', 0),
+        ])
+    missing_ideal_values = set(df3.columns) - set(ideal_values)
+    assert not missing_ideal_values
+    columns_to_flip = [col for col, ideal_value in ideal_values.items()
+                       if ideal_value == 0]
+    for col in columns_to_flip:
+        df3[col] = df3[col].map(lambda x: 1.0 - x)
+
+    # score
+    df3['score'] = np.linalg.norm(df3, axis=1)
+
+    # bundle up the score and search result
     df_final = json_normalize(result_dicts)
-    df_final = pd.concat([pd.concat([df_final, df3[['dist']]], axis=1),
-                          df[['area_suitable']]],
+    df_final = pd.concat([df_final, df3[['score']], df[['area_suitable']]],
                          axis=1)
     return df_final
-
-def dist(x, school_type):
-    ''' Calculate the Euclidean distance from the 'ideal' values
-    (in the 0-1 range).
-    '''
-    if school_type == 'secondary_school':
-        ideal = (1, 0, 1, 1, 0, 1, 0, 0, 1, 1)
-    elif school_type == 'primary_school':
-        ideal = (1, 0, 1, 1, 0, 1, 1, 0, 0, 1)
-    else:
-        raise NotImplementedError
-
-    df = pd.DataFrame(x)
-    df_x = df.values
-    from pprint import pprint
-    print('Dist calculation:')
-    print('df_x:')
-    pprint(df_x)
-    print('ideal:')
-    pprint(ideal)
-    print('df_x - ideal:')
-    pprint(df_x - ideal)
-    print('np.linalg.norm(df_x - ideal):')
-    pprint(np.linalg.norm(df_x - ideal))
-    import pdb; pdb.set_trace()
-    # what about: np.linalg.norm(df_x - np.array([[v] for v in ideal]))
-    return np.linalg.norm(df_x - ideal)
-
-def clean_columns(columns):
-    cols = list(columns)
-    cols.remove('id')
-    cols.remove('address')
-    cols.remove('authority')
-    cols.remove('centre.lat')
-    cols.remove('centre.lon')
-    cols.remove('name')
-    cols.remove('owner')
-    cols.remove('postcode')
-    cols.remove('region')
-    cols.remove('structures')
-    cols.remove('footage')
-    cols.remove('geoattributes.AREA')
-    cols.remove('area_suitable')
-    cols.remove('uprn')
-    cols.remove('geoattributes.FLOORSPACE')
-    return cols
