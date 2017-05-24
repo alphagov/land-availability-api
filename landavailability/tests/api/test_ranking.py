@@ -206,7 +206,7 @@ class TestRanking(TestCase):
 
         lower_site_req, upper_site_req = \
             ranking.school_site_size_range_from_terms(terms)
-        scored_result = ranking.score_results(
+        scored_result = ranking.score_result_dicts(
             result_dicts,
             lower_site_req, upper_site_req, school_type=terms.get('build'))
         pprint('Expected:')

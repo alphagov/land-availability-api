@@ -40,33 +40,77 @@ def school_site_size(num_pupils=0,
         return 350.0 + (4.1 * float(num_pupils))
     return 0
 
-def score_results(result_dicts, lower_site_req, upper_site_req, school_type):
-    # convert json results to a DataFrame
-    df = json_normalize(result_dicts)
 
+SCORING_COLUMNS = [
+    'area_suitable',
+    'geoattributes.BROADBAND',
+    'geoattributes.COVERAGE BY GREENBELT',
+    'geoattributes.DISTANCE TO BUS STOP',
+    'geoattributes.DISTANCE TO METRO STATION',
+    'geoattributes.DISTANCE TO MOTORWAY JUNCTION',
+    'geoattributes.DISTANCE TO OVERHEAD LINE',
+    'geoattributes.DISTANCE TO PRIMARY SCHOOL',
+    'geoattributes.DISTANCE TO RAIL STATION',
+    'geoattributes.DISTANCE TO SECONDARY SCHOOL',
+    'geoattributes.DISTANCE TO SUBSTATION'
+    ]
+
+def locations_to_dataframe(locations):
+    df = pd.DataFrame([
+        {
+            'geoattributes.AREA': l.estimated_floor_space,
+            'geoattributes.BROADBAND': 1.0 if l.nearest_broadband_fast else 0.0,
+            'geoattributes.COVERAGE BY GREENBELT': 0,  # TODO
+            'geoattributes.DISTANCE TO BUS STOP': l.nearest_busstop_distance,
+            'geoattributes.DISTANCE TO METRO STATION': l.nearest_metrotube_distance,
+            'geoattributes.DISTANCE TO MOTORWAY JUNCTION': l.nearest_motorway_distance,
+            'geoattributes.DISTANCE TO OVERHEAD LINE': l.nearest_ohl_distance,
+            'geoattributes.DISTANCE TO PRIMARY SCHOOL': 0,  # TODO
+            'geoattributes.DISTANCE TO RAIL STATION': l.nearest_trainstop_distance,
+            'geoattributes.DISTANCE TO SECONDARY SCHOOL': 0,  # TODO
+            'geoattributes.DISTANCE TO SUBSTATION': l.nearest_substation_distance,
+            }
+        for l in locations
+        ],
+        index=[l.id for l in locations])
+    df = df.apply(lambda x: pd.to_numeric(x, errors='ignore'))
+    return df
+
+
+def score_result_dicts(result_dicts, lower_site_req, upper_site_req,
+                       school_type):
+    # convert dict results to a DataFrame
+    df = json_normalize(result_dicts)
     # '67' -> 67
     df['geoattributes.BROADBAND'] = \
         pd.to_numeric(df['geoattributes.BROADBAND'], errors='ignore')
-    # this does all the columns but isn't needed
-    # df = df.apply(lambda x: pd.to_numeric(x, errors='ignore'))
+
+    # do the scoring
+    df_scored = score_results_dataframe(
+        df, lower_site_req, upper_site_req, school_type)
+
+    # bundle up the score and search result
+    df_final = json_normalize(result_dicts)
+    df_final = pd.concat(
+        [df_final, df_scored[['score']], df[['area_suitable']]],
+        axis=1)
+    return df_final
+
+def score_results_dataframe(results_dataframe, lower_site_req, upper_site_req,
+                            school_type):
+    '''Given search results (location) as rows of a dataframe (with columns
+    roughly SCORING_COLUMNS), return another dataframe with those rows and
+    a column 'score'. A higher score means a higher suitability for building
+    the specified school.
+
+    '''
+    df = results_dataframe
 
     # work out if the site size is suitable
     calculate_is_area_suitable(df, lower_site_req, upper_site_req)
 
     # filter to only the columns that we'll score against
-    cols = [
-        'area_suitable',
-        'geoattributes.BROADBAND',
-        'geoattributes.COVERAGE BY GREENBELT',
-        'geoattributes.DISTANCE TO BUS STOP',
-        'geoattributes.DISTANCE TO METRO STATION',
-        'geoattributes.DISTANCE TO MOTORWAY JUNCTION',
-        'geoattributes.DISTANCE TO OVERHEAD LINE',
-        'geoattributes.DISTANCE TO PRIMARY SCHOOL',
-        'geoattributes.DISTANCE TO RAIL STATION',
-        'geoattributes.DISTANCE TO SECONDARY SCHOOL',
-        'geoattributes.DISTANCE TO SUBSTATION']
-    df2 = pd.concat([df[col] for col in cols], axis=1)
+    df2 = pd.concat([df[col] for col in SCORING_COLUMNS], axis=1)
 
     # TODO
     # Check that distances are correctly either euclidean or network.
@@ -93,12 +137,7 @@ def score_results(result_dicts, lower_site_req, upper_site_req, school_type):
     flip_columns_so_1_is_always_best(df3, school_type)
 
     calculate_score(df3)
-
-    # bundle up the score and search result
-    df_final = json_normalize(result_dicts)
-    df_final = pd.concat([df_final, df3[['score']], df[['area_suitable']]],
-                         axis=1)
-    return df_final
+    return df3
 
 def calculate_is_area_suitable(df, lower_site_req, upper_site_req):
     df['area_suitable'] = \
