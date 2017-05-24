@@ -1136,6 +1136,8 @@ POLYGON_CAMBRIDGE = {
     ]"""
 }
 
+FIXTURE_BUS_STOP_CAMBRIDGE = (0.13076573610305786, 52.20487153271788)
+
 class TestLocationSearch(LandAvailabilityUserAPITestCase):
     @pytest.mark.django_db
     def test_by_postcode(self):
@@ -1254,6 +1256,12 @@ class TestLocationSearch(LandAvailabilityUserAPITestCase):
         self.assertTrue(serializer.is_valid())
         serializer.save()
 
+        # Add a bus stop so ranking has something to work on
+        busstop = BusStop(name='Test Bus Stop',
+                          point=Point(*FIXTURE_BUS_STOP_CAMBRIDGE))
+        busstop.save()
+        busstop.update_close_locations(default_range=3000)
+
         # Get the data from the API
         url = reverse('location-search')
         response = self.client.get(
@@ -1263,3 +1271,4 @@ class TestLocationSearch(LandAvailabilityUserAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         pprint(response.json())
         self.assertEqual(len(response.json()), 3)
+        self.assertEqual(response.json()[0]['name'], 'Test Location 3')

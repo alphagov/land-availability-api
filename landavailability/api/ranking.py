@@ -60,14 +60,14 @@ def locations_to_dataframe(locations):
         {
             'geoattributes.AREA': l.estimated_floor_space,
             'geoattributes.BROADBAND': 1.0 if l.nearest_broadband_fast else 0.0,
-            'geoattributes.COVERAGE BY GREENBELT': 0,  # TODO
+            'geoattributes.COVERAGE BY GREENBELT': np.NaN,  # TODO
             'geoattributes.DISTANCE TO BUS STOP': l.nearest_busstop_distance,
             'geoattributes.DISTANCE TO METRO STATION': l.nearest_metrotube_distance,
             'geoattributes.DISTANCE TO MOTORWAY JUNCTION': l.nearest_motorway_distance,
             'geoattributes.DISTANCE TO OVERHEAD LINE': l.nearest_ohl_distance,
-            'geoattributes.DISTANCE TO PRIMARY SCHOOL': 0,  # TODO
+            'geoattributes.DISTANCE TO PRIMARY SCHOOL': l.nearest_primary_school_distance,
             'geoattributes.DISTANCE TO RAIL STATION': l.nearest_trainstop_distance,
-            'geoattributes.DISTANCE TO SECONDARY SCHOOL': 0,  # TODO
+            'geoattributes.DISTANCE TO SECONDARY SCHOOL': l.nearest_secondary_school_distance,
             'geoattributes.DISTANCE TO SUBSTATION': l.nearest_substation_distance,
             }
         for l in locations
@@ -136,6 +136,10 @@ def score_results_dataframe(results_dataframe, lower_site_req, upper_site_req,
 
     flip_columns_so_1_is_always_best(df3, school_type)
 
+    # Assume gaps in the data score 0
+    # NaN -> 0
+    df3 = df3.fillna(0)
+
     calculate_score(df3)
     return df3
 
@@ -177,16 +181,16 @@ def flip_columns_so_1_is_always_best(df, school_type):
         ('area_suitable', 1),
         ('geoattributes.BROADBAND', 1),
         ('geoattributes.COVERAGE BY GREENBELT', 0),
-        ('geoattributes.DISTANCE TO BUS STOP', 1),
-        ('geoattributes.DISTANCE TO METRO STATION', 1),
-        ('geoattributes.DISTANCE TO MOTORWAY JUNCTION', 0),
-        ('geoattributes.DISTANCE TO OVERHEAD LINE', 0),
+        ('geoattributes.DISTANCE TO BUS STOP', 0),
+        ('geoattributes.DISTANCE TO METRO STATION', 0),
+        ('geoattributes.DISTANCE TO MOTORWAY JUNCTION', 1),
+        ('geoattributes.DISTANCE TO OVERHEAD LINE', 1),
         ('geoattributes.DISTANCE TO PRIMARY SCHOOL',
-            1 if school_type == 'secondary_school' else 0),
-        ('geoattributes.DISTANCE TO RAIL STATION', 1),
+            0 if school_type == 'secondary_school' else 1),
+        ('geoattributes.DISTANCE TO RAIL STATION', 0),
         ('geoattributes.DISTANCE TO SECONDARY SCHOOL',
-            1 if school_type == 'primary_school' else 0),
-        ('geoattributes.DISTANCE TO SUBSTATION', 0),
+            0 if school_type == 'primary_school' else 1),
+        ('geoattributes.DISTANCE TO SUBSTATION', 1),
         ])
     missing_ideal_values = set(df.columns) - set(ideal_values)
     assert not missing_ideal_values

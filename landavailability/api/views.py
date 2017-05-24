@@ -348,7 +348,7 @@ class LocationSearchView(APIView):
         # sort by score
         if build:
             location_objs_and_score = [
-                (locations_to_show.loc[obj.id]['score'], obj)
+                (-locations_to_show.loc[obj.id]['score'], obj)
                 for obj in location_objs]
             location_objs = [obj
                              for (score, obj) in sorted(location_objs_and_score)]
