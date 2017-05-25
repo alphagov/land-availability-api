@@ -1,18 +1,13 @@
 import pandas as pd
-from pandas.io.json import json_normalize
 import numpy as np
 
 log = __import__('logging').getLogger(__file__)
 
 
-def school_site_size_range_from_terms(terms):
-    return school_site_size_range(
-        num_pupils=terms.get('pupils', 0),
-        num_pupils_post16=terms.get('post16', 0),
-        school_type=terms.get('build'),
-        )
-
 def school_site_size_range(**kwargs):
+    '''Returns the floor space (m^2), as a range, for a school with the
+    given characteristics.
+    '''
     # size_req on ola
     size = school_site_size(**kwargs)
     # upper_site_req, lower_site_req on ola
@@ -56,6 +51,9 @@ SCORING_COLUMNS = [
     ]
 
 def locations_to_dataframe(locations):
+    '''Converts location objects (as a list or ResultSet) to a DataFrame.
+    The fields kept are exactly the attributes needed for the scoring.
+    '''
     df = pd.DataFrame([
         {
             'geoattributes.AREA': l.estimated_floor_space,
@@ -77,32 +75,12 @@ def locations_to_dataframe(locations):
     return df
 
 
-def score_result_dicts(result_dicts, lower_site_req, upper_site_req,
-                       school_type):
-    # convert dict results to a DataFrame
-    df = json_normalize(result_dicts)
-    # '67' -> 67
-    df['geoattributes.BROADBAND'] = \
-        pd.to_numeric(df['geoattributes.BROADBAND'], errors='ignore')
-
-    # do the scoring
-    df_scored = score_results_dataframe(
-        df, lower_site_req, upper_site_req, school_type)
-
-    # bundle up the score and search result
-    df_final = json_normalize(result_dicts)
-    df_final = pd.concat(
-        [df_final, df_scored[['score']], df[['area_suitable']]],
-        axis=1)
-    return df_final
-
 def score_results_dataframe(results_dataframe, lower_site_req, upper_site_req,
                             school_type):
-    '''Given search results (location) as rows of a dataframe (with columns
+    '''Given search results (locations) as rows of a dataframe (with columns
     roughly SCORING_COLUMNS), return another dataframe with those rows and
     a column 'score'. A higher score means a higher suitability for building
     the specified school.
-
     '''
     df = results_dataframe
 
@@ -168,6 +146,7 @@ def z_score_scaling(df):
 
 
 def rescale_columns_0_to_1(df):
+    '''Rescale values in each column so that they are between 0 and 1.'''
     return df.apply(
         lambda x: (x.astype(float) - min(x)) / ((max(x) - min(x)) or 0.1),
         axis=0)

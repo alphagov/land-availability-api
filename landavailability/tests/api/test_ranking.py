@@ -11,100 +11,13 @@ from api import ranking
 
 
 class TestRanking(TestCase):
-    def _test_scoring_with_elastic_search_conversions(self):
-        # i.e. we wrap the scoring routing with ola-specific stuff so that
-        # we can check the result directly with the the ola result
-        class Result(str):
-            def to_dict(self):
-                return json.loads(self)
+
+    def test_scoring_with_some_real_numbers(self):
+        # Data is from OLA. The scoring algorithm has been updated since then.
         terms = dict(
             build='primary_school',
         )
-        with open(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                               'data/ola_sample_results.json'), 'r') as f:
-            results = ResultList(
-                [Result(json.dumps(hit['_source']))
-                 for hit in json.loads(f.read())['hits']['hits']]
-                )
-        # I ran the scoring on ola roughly like this:
-        #   processor = get_processor(terms.get('build', 'primary_school'))
-        #   ola_scored_result = processor.rank_results(terms, results)
-        ola_scored_result = [
-            {'address': None,
-             'area_suitable': False,
-             'authority': 'Oldham',
-             'centre': {'lat': 53.5116476, 'lon': -2.1275541},
-             'dist': 7.2111025509,
-             'footage': '',
-             'geoattributes': {'AREA': 8711.7258599034,
-                               'BROADBAND': '67',
-                               'COVERAGE BY GREENBELT': 0.0,
-                               'DISTANCE TO BUS STOP': 2.06696443,
-                               'DISTANCE TO METRO STATION': 1591.414955752,
-                               'DISTANCE TO MOTORWAY JUNCTION': 1394.947379297,
-                               'DISTANCE TO OVERHEAD LINE': 3371.176664415,
-                               'DISTANCE TO PRIMARY SCHOOL': 71.867401834,
-                               'DISTANCE TO RAIL STATION': 3117.229318753,
-                               'DISTANCE TO SECONDARY SCHOOL': 824.753126148,
-                               'DISTANCE TO SUBSTATION': 2981.508831039,
-                               'FLOORSPACE': 8711.7258599034},
-             'id': 3830,
-             'lower_site_req': 332.5,
-             'name': 'Lower Lame Road - Land At, Lameside',
-             'owner': 'Oldham',
-             'postcode': None,
-             'region': None,
-             'structures': '',
-             'upper_site_req': 525.0,
-             'uprn': []},
-            {'address': None,
-             'area_suitable': False,
-             'authority': 'Oldham',
-             'centre': {'lat': 53.5129299, 'lon': -2.1582243},
-             'dist': 7.2111025509,
-             'footage': '',
-             'geoattributes': {'AREA': 1321.1736732156,
-                               'BROADBAND': '100',
-                               'COVERAGE BY GREENBELT': 0.0,
-                               'DISTANCE TO BUS STOP': 175.924922778,
-                               'DISTANCE TO METRO STATION': 386.560575227,
-                               'DISTANCE TO MOTORWAY JUNCTION': 1206.127109438,
-                               'DISTANCE TO OVERHEAD LINE': 1936.069138069,
-                               'DISTANCE TO PRIMARY SCHOOL': 382.742359075,
-                               'DISTANCE TO RAIL STATION': 1412.324901656,
-                               'DISTANCE TO SECONDARY SCHOOL': 984.728804015,
-                               'DISTANCE TO SUBSTATION': 1738.073428322,
-                               'FLOORSPACE': 1321.1736732156},
-             'id': 3825,
-             'lower_site_req': 332.5,
-             'name': 'Alfrod St - Land North East Of, (Sorplus), Filesworth',
-             'owner': 'Oldham',
-             'postcode': None,
-             'region': None,
-             'structures': '',
-             'upper_site_req': 525.0,
-             'uprn': []}]
-
-        lower_site_req, upper_site_req = \
-            ranking.school_site_size_range_from_terms(terms)
-        scored_result = \
-            convert_df_to_elastic_results(
-                ranking.score_results(
-                    convert_elastic_results_to_dicts(results),
-                    lower_site_req, upper_site_req,
-                    school_type=terms.get('build')),
-                terms
-                )
-        self.assertEqual(ola_scored_result, scored_result)
-
-    def test_scoring(self):
-        # we test just the scoring routine. we hacked ola to see what format
-        # the data was going in and out of it and see if our version of it
-        # does the same thing. but the ola results are not quite right
-        terms = dict(
-            build='primary_school',
-        )
-        # Get result_dicts by running:
+        # On OLA we got result_dicts by running:
         # with open(os.path.join(os.path.dirname(os.path.realpath(__file__)),
         #                        'data/ola_sample_results.json'), 'r') as f:
         #     results = ResultList(
@@ -200,13 +113,14 @@ class TestRanking(TestCase):
             'region': {0: None, 1: None},
             'structures': {0: '', 1: ''},
             'uprn': {0: [], 1: []}})
-        expected_scored_result['score'] = pd.Series({0: 2.000000,
-                                                     1: 2.645751})
+        # Scores are different to OLA
+        expected_scored_result['score'] = pd.Series({0: 2.44948974278,
+                                                     1: 2.2360679775})
         expected_scored_result['area_suitable'] = pd.Series({0: False, 1: False})
 
         lower_site_req, upper_site_req = \
-            ranking.school_site_size_range_from_terms(terms)
-        scored_result = ranking.score_result_dicts(
+            school_site_size_range_from_terms(terms)
+        scored_result = score_result_dicts(
             result_dicts,
             lower_site_req, upper_site_req, school_type=terms.get('build'))
         pprint('Expected:')
@@ -288,14 +202,14 @@ class TestRanking(TestCase):
             'area_suitable': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.BROADBAND': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.COVERAGE BY GREENBELT': {0: 1.0, 1: 0.4, 2: 0.0},
-            'geoattributes.DISTANCE TO BUS STOP': {0: 0.0, 1: 0.6, 2: 1.0},
-            'geoattributes.DISTANCE TO METRO STATION': {0: 0.0, 1: 0.6, 2: 1.0},
-            'geoattributes.DISTANCE TO MOTORWAY JUNCTION': {0: 1.0, 1: 0.4, 2: 0.0},
-            'geoattributes.DISTANCE TO OVERHEAD LINE': {0: 1.0, 1: 0.4, 2: 0.0},
-            'geoattributes.DISTANCE TO PRIMARY SCHOOL': {0: 1.0, 1: 0.4, 2: 0.0},
-            'geoattributes.DISTANCE TO RAIL STATION': {0: 0.0, 1: 0.6, 2: 1.0},
-            'geoattributes.DISTANCE TO SECONDARY SCHOOL': {0: 0.0, 1: 0.6, 2: 1.0},
-            'geoattributes.DISTANCE TO SUBSTATION': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO BUS STOP': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO METRO STATION': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO MOTORWAY JUNCTION': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO OVERHEAD LINE': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO PRIMARY SCHOOL': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO RAIL STATION': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO SECONDARY SCHOOL': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO SUBSTATION': {0: 0.0, 1: 0.6, 2: 1.0},
             }))
 
     def test_flip_columns_secondary_school(self):
@@ -319,14 +233,14 @@ class TestRanking(TestCase):
             'area_suitable': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.BROADBAND': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.COVERAGE BY GREENBELT': {0: 1.0, 1: 0.4, 2: 0.0},
-            'geoattributes.DISTANCE TO BUS STOP': {0: 0.0, 1: 0.6, 2: 1.0},
-            'geoattributes.DISTANCE TO METRO STATION': {0: 0.0, 1: 0.6, 2: 1.0},
-            'geoattributes.DISTANCE TO MOTORWAY JUNCTION': {0: 1.0, 1: 0.4, 2: 0.0},
-            'geoattributes.DISTANCE TO OVERHEAD LINE': {0: 1.0, 1: 0.4, 2: 0.0},
-            'geoattributes.DISTANCE TO PRIMARY SCHOOL': {0: 0.0, 1: 0.6, 2: 1.0},
-            'geoattributes.DISTANCE TO RAIL STATION': {0: 0.0, 1: 0.6, 2: 1.0},
-            'geoattributes.DISTANCE TO SECONDARY SCHOOL': {0: 1.0, 1: 0.4, 2: 0.0},
-            'geoattributes.DISTANCE TO SUBSTATION': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO BUS STOP': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO METRO STATION': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO MOTORWAY JUNCTION': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO OVERHEAD LINE': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO PRIMARY SCHOOL': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO RAIL STATION': {0: 1.0, 1: 0.4, 2: 0.0},
+            'geoattributes.DISTANCE TO SECONDARY SCHOOL': {0: 0.0, 1: 0.6, 2: 1.0},
+            'geoattributes.DISTANCE TO SUBSTATION': {0: 0.0, 1: 0.6, 2: 1.0},
             }))
 
     def test_calculate_score(self):
@@ -340,16 +254,6 @@ class TestRanking(TestCase):
         assert_series_equal(
             df['score'],
             pd.Series([0.67, 1.414214, 0.0, 1.732051], name='score'))
-
-    def test_school_site_size_range_from_terms(self):
-        terms = dict(
-            pupils=210,
-            post16=0,
-            build='primary_school'
-            )
-        self.assertEqual(
-            ranking.school_site_size_range_from_terms(terms),
-            (1150.45, 1816.5))
 
     def test_school_site_size_range(self):
         self.assertEqual(
@@ -415,8 +319,7 @@ class TestSchoolSiteSize(TestCase):
         self.assertEqual(space_per_pupil, 13.17)
 
 
-# OLA functions #
-
+# OLA functions 1 #
 # These are copied straight from OLA. They marshall the data going into and out
 # of the scoring algorithm, so that we can ensure our underlying scoring
 # algorithm behaves the same as in OLA.
@@ -437,7 +340,7 @@ def convert_df_to_elastic_results(df, terms):
     jsonblob = df.to_json(orient='records')
     normalized_results = json.loads(jsonblob)
     lower_site_req, upper_site_req = \
-        ranking.school_site_size_range_from_terms(terms)
+        school_site_size_range_from_terms(terms)
     return [denormalize_dict(d, lower_site_req, upper_site_req)
             for d in normalized_results]
 
@@ -466,4 +369,41 @@ class ResultList(list):
     """
     hits = 0
 
-# End of OLA functions #
+# End of OLA functions 1 #
+
+# OLA functions 2 #
+# These funcs convert ElasticSearch-style search results that OLA used as
+# the input and output from the search ranking. This can be used by tests
+# to compare the search ranking from OLA with our search.
+
+def score_result_dicts(result_dicts, lower_site_req, upper_site_req,
+                       school_type):
+    '''Given search results (as a list of dictionaries), calculate a score.
+    This is a wrapper around the scoring, as OLA would use it.
+    '''
+    # convert dict results to a DataFrame
+    from pandas.io.json import json_normalize
+    df = json_normalize(result_dicts)
+    # '67' -> 67
+    df['geoattributes.BROADBAND'] = \
+        pd.to_numeric(df['geoattributes.BROADBAND'], errors='ignore')
+
+    # do the scoring
+    df_scored = ranking.score_results_dataframe(
+        df, lower_site_req, upper_site_req, school_type)
+
+    # bundle up the score and search result
+    df_final = json_normalize(result_dicts)
+    df_final = pd.concat(
+        [df_final, df_scored[['score']], df[['area_suitable']]],
+        axis=1)
+    return df_final
+
+def school_site_size_range_from_terms(terms):
+    return ranking.school_site_size_range(
+        num_pupils=terms.get('pupils', 0),
+        num_pupils_post16=terms.get('post16', 0),
+        school_type=terms.get('build'),
+        )
+
+# End of OLA functions 2 #
