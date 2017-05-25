@@ -27,12 +27,14 @@ psql landavailability
 Make sure you have this environment variable set:
 
 ```
+SECRET_KEY=<random string>
 DATABASE_URL=postgres://USERNAME:PASSWORD@HOST:PORT/DBNAME
 ```
 
 example:
 
 ```
+SECRET_KEY=abc1234
 DATABASE_URL=postgres://andreagrandi@localhost:5432/landavailability
 ```
 
@@ -40,9 +42,16 @@ If you are using a Python virtual environment, you can save these values in
 $venv_folder/bin/postactivate script:
 
 ```
+export SECRET_KEY=abc1234
 export DATABASE_URL=postgres://andreagrandi@localhost:5432/landavailability
 ```
 
 # Python
 
 The project is being developed and tested with **Python >= 3.5.x**
+
+# Tests
+
+Run the tests with:
+
+    pytest
