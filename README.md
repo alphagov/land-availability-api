@@ -47,9 +47,21 @@ export SECRET_KEY=abc1234
 export DATABASE_URL=postgres://andreagrandi@localhost:5432/landavailability
 ```
 
-# Python
 
-The project is being developed and tested with **Python >= 3.5.x**
+# Access
+
+## Create user and key
+
+The Land Availability UI needs a user and token. To create these, inside a ``./manage.py shell`` run:
+
+```
+from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
+user = User.objects.create_user('ui')
+user.save()
+token = Token.objects.create(user=user)
+print(token.key)
+```
 
 # Tests
 
