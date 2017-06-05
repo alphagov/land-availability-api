@@ -1168,8 +1168,6 @@ class TestLocationSearch(LandAvailabilityUserAPITestCase):
     @pytest.mark.django_db
     def test_by_polygon(self):
         # Create test Locations
-
-        # Create test Locations
         serializer = LocationSerializer(data=FIXTURE_LOCATION_1)
         self.assertTrue(serializer.is_valid())
         serializer.save()

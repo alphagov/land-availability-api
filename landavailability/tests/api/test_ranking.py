@@ -129,17 +129,16 @@ class TestRanking(TestCase):
         pprint(scored_result)
         assert_frame_equal(expected_scored_result, scored_result)
 
-    def test_calculate_is_area_suitable(self):
+    def test_is_area_suitable(self):
         df = pd.DataFrame({
             'geoattributes.AREA': {0: 1000.0, 1: 2000.0, 2: 3000.0},
             })
-        ranking.calculate_is_area_suitable(
+        is_area_suitable = ranking.is_area_suitable(
             df, lower_site_req=1900.0, upper_site_req=2500.0)
         assert_frame_equal(
-            df,
+            is_area_suitable,
             pd.DataFrame(OrderedDict((
-                ('geoattributes.AREA', {0: 1000.0, 1: 2000.0, 2: 3000.0}),
-                ('area_suitable', {0: False, 1: True, 2: False}),
+                ('geoattributes.AREA', {0: False, 1: True, 2: False}),
             ))))
 
     def test_z_score_scaling(self):
@@ -196,7 +195,7 @@ class TestRanking(TestCase):
             'geoattributes.DISTANCE TO SUBSTATION': {0: 0.0, 1: 0.6, 2: 1.0},
             })
         ranking.flip_columns_so_1_is_always_best(
-            df, school_type='primary_school')
+            df, ranking.SchoolRankingConfig(0, 0, school_type='primary_school'))
         pprint(df.to_dict())
         assert_frame_equal(df, pd.DataFrame({
             'area_suitable': {0: 0.0, 1: 0.6, 2: 1.0},
@@ -227,7 +226,7 @@ class TestRanking(TestCase):
             'geoattributes.DISTANCE TO SUBSTATION': {0: 0.0, 1: 0.6, 2: 1.0},
             })
         ranking.flip_columns_so_1_is_always_best(
-            df, school_type='secondary_school')
+            df, ranking.SchoolRankingConfig(0, 0, school_type='secondary_school'))
         pprint(df.to_dict())
         assert_frame_equal(df, pd.DataFrame({
             'area_suitable': {0: 0.0, 1: 0.6, 2: 1.0},
@@ -387,10 +386,17 @@ def score_result_dicts(result_dicts, lower_site_req, upper_site_req,
     # '67' -> 67
     df['geoattributes.BROADBAND'] = \
         pd.to_numeric(df['geoattributes.BROADBAND'], errors='ignore')
+    # extract features related to the query
+    ranking_config = ranking.SchoolRankingConfig(
+        lower_site_req=lower_site_req, upper_site_req=upper_site_req,
+        school_type=school_type)
+    ranking_config.extract_features(df)
 
     # do the scoring
     df_scored = ranking.score_results_dataframe(
-        df, lower_site_req, upper_site_req, school_type)
+        df,
+        ranking.SchoolRankingConfig(lower_site_req,
+                                    upper_site_req, school_type))
 
     # bundle up the score and search result
     df_final = json_normalize(result_dicts)

@@ -14,6 +14,7 @@ from .serializers import (
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
+from django.db.models.query import QuerySet
 import json
 from .permissions import IsAdminOrReadOnlyUser
 
@@ -316,11 +317,10 @@ class LocationSearchView(APIView):
                 status=status.HTTP_400_BAD_REQUEST)
 
         # serialize them
-        from .ranking import (locations_to_dataframe,
-                              school_site_size_range,
+        from .ranking import (school_site_size_range,
                               score_results_dataframe,
+                              SchoolRankingConfig,
                               )
-        locations = locations_to_dataframe(locations)
 
         # score & order them
         if build:
@@ -329,9 +329,12 @@ class LocationSearchView(APIView):
                                 '"secondary_school" or "primary_school"',
                                 status=status.HTTP_400_BAD_REQUEST)
             lower_site_req, upper_site_req = school_site_size_range(**kwargs)
-            locations = score_results_dataframe(locations, lower_site_req,
-                                                upper_site_req,
-                                                school_type=build)
+            ranking_config = SchoolRankingConfig(
+                lower_site_req=lower_site_req, upper_site_req=upper_site_req,
+                school_type=build)
+            locations = ranking_config.locations_to_dataframe(locations)
+            ranking_config.extract_features(locations)
+            locations = score_results_dataframe(locations, ranking_config)
             locations.sort_values('score', ascending=False, inplace=True)
 
         # paging
@@ -343,15 +346,20 @@ class LocationSearchView(APIView):
 
         # convert to Location objects
         # also consider just returning JSON with the score and scoring details
-        location_ids = locations_to_show.index
+        if isinstance(locations, QuerySet):
+            location_ids = [l.id for l in locations_to_show]
+        else:
+            # locations is a dataframe, because they have been ranked
+            location_ids = locations_to_show.index
         location_objs = Location.objects.filter(id__in=location_ids)
         # sort by score
         if build:
             location_objs_and_score = [
                 (-locations_to_show.loc[obj.id]['score'], obj)
                 for obj in location_objs]
-            location_objs = [obj
-                             for (score, obj) in sorted(location_objs_and_score)]
+            location_objs = [
+                obj
+                for (score, obj) in sorted(location_objs_and_score)]
 
         # serialize & return results
         serializer = LocationSerializer(location_objs, many=True)
