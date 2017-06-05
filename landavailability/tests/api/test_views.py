@@ -1270,3 +1270,45 @@ class TestLocationSearch(LandAvailabilityUserAPITestCase):
         pprint(response.json())
         self.assertEqual(len(response.json()), 3)
         self.assertEqual(response.json()[0]['name'], 'Test Location 3')
+
+    @pytest.mark.django_db
+    def test_ranking_no_pupils_param(self):
+        url = reverse('location-search')
+        response = self.client.get(url, build='secondary_school')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_ranking_non_int_page_size(self):
+        url = reverse('location-search')
+        response = self.client.get(url, page_size='string')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_ranking_negative_page_size(self):
+        url = reverse('location-search')
+        response = self.client.get(url, page_size=-5)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_ranking_page_size_too_big(self):
+        url = reverse('location-search')
+        response = self.client.get(url, page_size=1e6)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_ranking_non_int_page(self):
+        url = reverse('location-search')
+        response = self.client.get(url, page='string')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_ranking_negative_page(self):
+        url = reverse('location-search')
+        response = self.client.get(url, page=-5)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_ranking_page_too_big(self):
+        url = reverse('location-search')
+        response = self.client.get(url, page=1e6)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
