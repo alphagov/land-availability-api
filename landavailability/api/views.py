@@ -14,9 +14,13 @@ from .serializers import (
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
+from django.db.models.query import QuerySet
 import json
 from .permissions import IsAdminOrReadOnlyUser
 
+
+MIN_PAGE_SIZE = 1
+MAX_PAGE_SIZE = 100
 
 class BusStopCreateView(APIView):
     permission_classes = (IsAdminUser, )
@@ -196,6 +200,7 @@ class LocationView(APIView):
         range_distance = request.query_params.get('range_distance')
         polygon = request.query_params.get('polygon')
 
+        # work out which locations are requested
         if polygon:
             # Build a Polygon instance using the coordinates passed
             # as parameters in the 'polygon' field of the query string
@@ -208,15 +213,13 @@ class LocationView(APIView):
 
             # Get all the locations that intersect the given polygon
             locations = Location.objects.filter(geom__intersects=geometry)
-            serializer = LocationSerializer(locations, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
         elif postcode and range_distance:
             # Normalise postcode first
             postcode = postcode.replace(' ', '').upper()
 
             try:
                 codepoint = CodePoint.objects.get(postcode=postcode)
-            except CodePoint.DoesNotExist as ex:
+            except CodePoint.DoesNotExist:
                 return Response(
                     'The given postcode is not available in CodePoints',
                     status=status.HTTP_400_BAD_REQUEST)
@@ -224,12 +227,143 @@ class LocationView(APIView):
             locations = Location.objects.filter(
                 geom__dwithin=(codepoint.point, D(m=range_distance))).\
                 annotate(distance=Distance('geom', codepoint.point))
-            serializer = LocationSerializer(locations, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(
-                'The postcode parameter is missing',
+                'The parameters are missing: postcode and range_distance OR '
+                'polygon',
                 status=status.HTTP_400_BAD_REQUEST)
+
+        # no particular ordering
+
+        # return them
+        serializer = LocationSerializer(locations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LocationSearchView(APIView):
+    permission_classes = (IsAdminOrReadOnlyUser, )
+
+    def get(self, request, *args, **kwargs):
+        postcode = request.query_params.get('postcode')
+        range_distance = request.query_params.get('range_distance')
+        polygon = request.query_params.get('polygon')
+        build = request.query_params.get('build')
+        num_pupils = request.query_params.get('num_pupils', 0)
+        num_pupils_post16 = request.query_params.get('num_pupils_post16', 0)
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 20)
+
+        try:
+            num_pupils = int(num_pupils)
+        except ValueError:
+            return Response('num_pupils parameter must be an integer',
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            num_pupils_post16 = int(num_pupils_post16)
+        except ValueError:
+            return Response('num_pupils_post16 parameter must be an integer',
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            page_size = int(page_size)
+        except ValueError:
+            return Response('page_size parameter must be an integer',
+                            status=status.HTTP_400_BAD_REQUEST)
+        if page_size > MAX_PAGE_SIZE:
+            return Response('page_size maximum is {}'.format(MAX_PAGE_SIZE),
+                            status=status.HTTP_400_BAD_REQUEST)
+        if page_size < MIN_PAGE_SIZE:
+            return Response('page_size minimum is {}'.format(MIN_PAGE_SIZE),
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            page = int(page)
+        except ValueError:
+            return Response('page parameter must be an integer',
+                            status=status.HTTP_400_BAD_REQUEST)
+        if page < 1:
+            return Response('page must be 1 or above',
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # work out which locations are requested
+        if polygon:
+            # Build a Polygon instance using the coordinates passed
+            # as parameters in the 'polygon' field of the query string
+            json_geometry = {
+                "type": "Polygon",
+                "coordinates": json.loads(polygon)
+            }
+
+            geometry = GEOSGeometry(json.dumps(json_geometry), srid=4326)
+
+            # Get all the locations that intersect the given polygon
+            locations = Location.objects.filter(geom__intersects=geometry)
+        elif postcode and range_distance:
+            # Normalise postcode first
+            postcode = postcode.replace(' ', '').upper()
+
+            try:
+                codepoint = CodePoint.objects.get(postcode=postcode)
+            except CodePoint.DoesNotExist:
+                return Response(
+                    'The given postcode is not available in CodePoints',
+                    status=status.HTTP_400_BAD_REQUEST)
+
+            locations = Location.objects.filter(
+                geom__dwithin=(codepoint.point, D(m=range_distance))).\
+                annotate(distance=Distance('geom', codepoint.point))
+        else:
+            return Response(
+                'The parameters are missing: postcode and range_distance OR '
+                'polygon',
+                status=status.HTTP_400_BAD_REQUEST)
+
+        # serialize them
+        from .ranking import (school_site_size_range,
+                              score_results_dataframe,
+                              SchoolRankingConfig,
+                              )
+
+        # score & order them
+        if build:
+            if build not in ('secondary_school', 'primary_school'):
+                return Response('Bad parameter "build" - should be '
+                                '"secondary_school" or "primary_school"',
+                                status=status.HTTP_400_BAD_REQUEST)
+            lower_site_req, upper_site_req = school_site_size_range(**kwargs)
+            ranking_config = SchoolRankingConfig(
+                lower_site_req=lower_site_req, upper_site_req=upper_site_req,
+                school_type=build)
+            locations = ranking_config.locations_to_dataframe(locations)
+            ranking_config.extract_features(locations)
+            locations = score_results_dataframe(locations, ranking_config)
+            locations.sort_values('score', ascending=False, inplace=True)
+
+        # paging
+        offset = page_size * (page - 1)
+        if offset > len(locations):
+            return Response('"page" is out of range',
+                            status=status.HTTP_404_NOT_FOUND)
+        locations_to_show = locations[offset:offset + page_size]
+
+        # convert to Location objects
+        # also consider just returning JSON with the score and scoring details
+        if isinstance(locations, QuerySet):
+            location_ids = [l.id for l in locations_to_show]
+        else:
+            # locations is a dataframe, because they have been ranked
+            location_ids = locations_to_show.index
+        location_objs = Location.objects.filter(id__in=location_ids)
+        # sort by score
+        if build:
+            location_objs_and_score = [
+                (-locations_to_show.loc[obj.id]['score'], obj)
+                for obj in location_objs]
+            location_objs = [
+                obj
+                for (score, obj) in sorted(location_objs_and_score)]
+
+        # serialize & return results
+        serializer = LocationSerializer(location_objs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class LocationDetailsView(generics.RetrieveAPIView):

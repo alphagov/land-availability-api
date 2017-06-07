@@ -1,4 +1,6 @@
-from unittest import TestCase
+import json
+from pprint import pprint
+
 import pytest
 from django.urls import reverse
 from django.contrib.auth.models import User
@@ -7,12 +9,12 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
+
 from api.models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
     Motorway, Substation, OverheadLine, School, Location)
 from api.serializers import (
     LocationSerializer, CodePointSerializer, BroadbandSerializer)
-import json
 
 
 class LandAvailabilityAdminAPITestCase(APITestCase):
@@ -1017,3 +1019,296 @@ class TestLocationDetailsView(LandAvailabilityUserAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()['uprn'], '010090969113')
         self.assertEqual(response.json()['nearest_broadband_fast'], True)
+
+
+FIXTURE_CODEPOINT_CB11AZ = {
+    "postcode": "CB11AZ",
+    "quality": "10",
+    "country": "E92000001",
+    "nhs_region": "E19000001",
+    "nhs_health_authority": "E18000002",
+    "county": "",
+    "district": "E08000002",
+    "ward": "E05000681",
+    "point": {
+        "type": "Point",
+        "coordinates": [0.13088953859958197, 52.20513657706537]
+    },
+    "srid": 4326
+}
+
+FIXTURE_LOCATION_1 = {
+    "uprn": "010090969113",
+    "ba_ref": "00004870000113",
+    "name": "Test Location 1",
+    "authority": "Cambridge City Council",
+    "owner": "",
+    "unique_asset_id": "",
+    "geom": {
+        "type": "MultiPolygon",
+        "coordinates": [
+            [
+                [
+                    [0.13153553009033203, 52.205765731674575],
+                    [0.13143360614776609, 52.20569340742784],
+                    [0.13174474239349365, 52.20561122064091],
+                    [0.13180643320083618, 52.20569669489615],
+                    [0.13153553009033203, 52.205765731674575]
+                ]
+            ]
+        ]
+    },
+    "srid": 4326
+}
+
+FIXTURE_LOCATION_2 = {
+    "uprn": "200004166552",
+    "ba_ref": "00004310025025",
+    "name": "Test Location 2",
+    "authority": "Cambridge City Council",
+    "owner": "",
+    "unique_asset_id": "",
+    "geom": {
+        "type": "MultiPolygon",
+        "coordinates": [
+            [
+                [
+                    [0.13197273015975952, 52.20564902658178],
+                    [0.13188958168029785, 52.20554218362242],
+                    [0.13214707374572754, 52.205476433981275],
+                    [0.13222217559814453, 52.205583277098725],
+                    [0.13197273015975952, 52.20564902658178]
+                ]
+            ]
+        ]
+    },
+    "srid": 4326
+}
+
+FIXTURE_LOCATION_3 = {
+    "uprn": "200004178088",
+    "ba_ref": "00006230135008",
+    "name": "Test Location 3",
+    "authority": "Cambridge City Council",
+    "owner": "",
+    "unique_asset_id": "",
+    "geom": {
+        "type": "MultiPolygon",
+        "coordinates": [
+            [
+                [
+                    [0.13076573610305786, 52.20487153271788],
+                    [0.13069331645965576, 52.20480906961836],
+                    [0.13091862201690674, 52.204717018574804],
+                    [0.13101786375045776, 52.20480906961836],
+                    [0.13076573610305786, 52.20487153271788]
+                ]
+            ]
+        ]
+        },
+    "srid": 4326
+    }
+
+POLYGON_CAMBRIDGE = {
+    'polygon': """[
+        [
+            [
+                0.0858306884765625,
+                52.18308960259887
+            ],
+            [
+                0.1786994934082031,
+                52.18308960259887
+            ],
+            [
+                0.1786994934082031,
+                52.22485521518378
+            ],
+            [
+                0.0858306884765625,
+                52.22485521518378
+            ],
+            [
+                0.0858306884765625,
+                52.18308960259887
+            ]
+        ]
+    ]"""
+}
+
+FIXTURE_BUS_STOP_CAMBRIDGE = (0.13076573610305786, 52.20487153271788)
+
+class TestLocationSearch(LandAvailabilityUserAPITestCase):
+    @pytest.mark.django_db
+    def test_by_postcode(self):
+        # Create test CodePoint
+        serializer = CodePointSerializer(data=FIXTURE_CODEPOINT_CB11AZ)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+
+        # Create test Locations
+        serializer = LocationSerializer(data=FIXTURE_LOCATION_1)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        serializer = LocationSerializer(data=FIXTURE_LOCATION_2)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        serializer = LocationSerializer(data=FIXTURE_LOCATION_3)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+
+        # Get the data from the API
+        url = reverse('location-search')
+        response = self.client.get(
+            url, {'postcode': 'CB11AZ', 'range_distance': 1000})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 3)
+
+    @pytest.mark.django_db
+    def test_by_polygon(self):
+        # Create test Locations
+        serializer = LocationSerializer(data=FIXTURE_LOCATION_1)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        serializer = LocationSerializer(data=FIXTURE_LOCATION_2)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+
+        # Get the data from the API
+        url = reverse('location-search')
+        response = self.client.get(
+            url, POLYGON_CAMBRIDGE,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 2)
+
+    @pytest.mark.django_db
+    def test_no_locations_outside_selected_area(self):
+        # Create test Locations
+        serializer = LocationSerializer(data=FIXTURE_LOCATION_1)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        serializer = LocationSerializer(data=FIXTURE_LOCATION_2)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+
+        # Get the data from the API
+        url = reverse('location-search')
+        response = self.client.get(
+            url, {
+                'polygon': """[
+                    [
+                        [
+                            0.05046844482421874,
+                            52.3130964236375
+                        ],
+                        [
+                            0.142822265625,
+                            52.3130964236375
+                        ],
+                        [
+                            0.142822265625,
+                            52.343100382549984
+                        ],
+                        [
+                            0.05046844482421874,
+                            52.343100382549984
+                        ],
+                        [
+                            0.05046844482421874,
+                            52.3130964236375
+                        ]
+                    ]
+                ]"""
+            }
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 0)
+
+    @pytest.mark.django_db
+    def test_location_view_get_locations_no_params(self):
+        url = reverse('location-search')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_location_view_get_locations_invalid_postcode(self):
+        url = reverse('location-search')
+        response = self.client.get(
+            url, {'postcode': 'XX11YY', 'range_distance': 1000})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_ranking(self):
+        # Create test Locations
+        serializer = LocationSerializer(data=FIXTURE_LOCATION_1)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        serializer = LocationSerializer(data=FIXTURE_LOCATION_2)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+        serializer = LocationSerializer(data=FIXTURE_LOCATION_3)
+        self.assertTrue(serializer.is_valid())
+        serializer.save()
+
+        # Add a bus stop so ranking has something to work on
+        busstop = BusStop(name='Test Bus Stop',
+                          point=Point(*FIXTURE_BUS_STOP_CAMBRIDGE))
+        busstop.save()
+        busstop.update_close_locations(default_range=3000)
+
+        # Get the data from the API
+        url = reverse('location-search')
+        response = self.client.get(
+            url, dict(POLYGON_CAMBRIDGE.items(),
+                      build='secondary_school'))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        pprint(response.json())
+        self.assertEqual(len(response.json()), 3)
+        self.assertEqual(response.json()[0]['name'], 'Test Location 3')
+
+    @pytest.mark.django_db
+    def test_ranking_no_pupils_param(self):
+        url = reverse('location-search')
+        response = self.client.get(url, build='secondary_school')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_ranking_non_int_page_size(self):
+        url = reverse('location-search')
+        response = self.client.get(url, page_size='string')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_ranking_negative_page_size(self):
+        url = reverse('location-search')
+        response = self.client.get(url, page_size=-5)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_ranking_page_size_too_big(self):
+        url = reverse('location-search')
+        response = self.client.get(url, page_size=1e6)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_ranking_non_int_page(self):
+        url = reverse('location-search')
+        response = self.client.get(url, page='string')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_ranking_negative_page(self):
+        url = reverse('location-search')
+        response = self.client.get(url, page=-5)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @pytest.mark.django_db
+    def test_ranking_page_too_big(self):
+        url = reverse('location-search')
+        response = self.client.get(url, page=1e6)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
