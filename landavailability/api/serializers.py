@@ -449,10 +449,26 @@ class SchoolSerializer(serializers.ModelSerializer):
 class LocationSerializer(serializers.ModelSerializer):
     # this extra field is used to specify the srid geo format
     srid = serializers.IntegerField(write_only=True)
+    site_size = serializers.SerializerMethodField()
 
     class Meta:
         model = Location
-        fields = '__all__'
+        fields = (
+            'id', 'uprn', 'ba_ref', 'name', 'point', 'geom',
+            'authority', 'owner', 'unique_asset_id', 'full_address',
+            'estimated_floor_space', 'nearest_busstop_id',
+            'nearest_busstop_distance', 'nearest_trainstop_id',
+            'nearest_trainstop_distance', 'nearest_substation_id',
+            'nearest_substation_distance', 'nearest_ohl_id',
+            'nearest_ohl_distance', 'nearest_motorway_id',
+            'nearest_motorway_distance', 'nearest_broadband_id',
+            'nearest_broadband_distance', 'nearest_broadband_fast',
+            'nearest_greenbelt_id', 'nearest_greenbelt_distance',
+            'nearest_primary_school_id', 'nearest_primary_school_distance',
+            'nearest_secondary_school_id',
+            'nearest_secondary_school_distance', 'nearest_metrotube_id',
+            'nearest_metrotube_distance', 'site_size', 'srid'
+            )
 
         # We want to handle duplicated entries manually so we remove the
         # unique validator
@@ -462,8 +478,11 @@ class LocationSerializer(serializers.ModelSerializer):
             },
             'point': {
                 'validators': [],
-            }
+            },
         }
+
+    def get_site_size(self, obj):
+        return obj.get_geom_area()
 
     def create(self, validated_data):
         uprn = validated_data['uprn']
@@ -484,7 +503,7 @@ class LocationSerializer(serializers.ModelSerializer):
         location.owner = validated_data.get('owner')
         location.unique_asset_id = validated_data.get('unique_asset_id')
         location.full_address = validated_data.get('full_address')
-        location.estimated_floor_space = validated_data.get('total_area')
+        location.estimated_floor_space = validated_data.get('estimated_floor_space')
 
         location.save()
         return location

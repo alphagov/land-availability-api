@@ -585,4 +585,4 @@ class Location(models.Model):
         # transform whatever srid it currently is (the default is what it was
         # created with) to British National Grid SRID of 27700 because that
         # uses meters as the units.
-        return self.geom.transform(27700, clone=True).area
+        return abs(self.geom.transform(27700, clone=True).area)

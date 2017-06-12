@@ -18,6 +18,8 @@ from django.db.models.query import QuerySet
 import json
 from .permissions import IsAdminOrReadOnlyUser
 
+log = __import__('logging').getLogger(__name__)
+
 
 MIN_PAGE_SIZE = 1
 MAX_PAGE_SIZE = 100
@@ -311,6 +313,8 @@ class LocationSearchView(APIView):
                 geom__dwithin=(codepoint.point, D(m=range_distance))).\
                 annotate(distance=Distance('geom', codepoint.point))
         else:
+            log.debug('Params missing postcode and range_distance OR '
+                      'polygon')
             return Response(
                 'The parameters are missing: postcode and range_distance OR '
                 'polygon',
@@ -321,6 +325,7 @@ class LocationSearchView(APIView):
                               score_results_dataframe,
                               SchoolRankingConfig,
                               )
+        return_data = {}
 
         # score & order them
         if build:
@@ -329,13 +334,17 @@ class LocationSearchView(APIView):
                                 '"secondary_school" or "primary_school"',
                                 status=status.HTTP_400_BAD_REQUEST)
             lower_site_req, upper_site_req = school_site_size_range(**kwargs)
+            return_data.update({
+                'lower_site_req': lower_site_req,
+                'upper_site_req': upper_site_req,
+                })
             ranking_config = SchoolRankingConfig(
                 lower_site_req=lower_site_req, upper_site_req=upper_site_req,
                 school_type=build)
             locations = ranking_config.locations_to_dataframe(locations)
             ranking_config.extract_features(locations)
-            locations = score_results_dataframe(locations, ranking_config)
-            locations.sort_values('score', ascending=False, inplace=True)
+            scored_locations = score_results_dataframe(locations,
+                                                       ranking_config)
 
         # paging
         offset = page_size * (page - 1)
@@ -354,16 +363,35 @@ class LocationSearchView(APIView):
         location_objs = Location.objects.filter(id__in=location_ids)
         # sort by score
         if build:
-            location_objs_and_score = [
-                (-locations_to_show.loc[obj.id]['score'], obj)
-                for obj in location_objs]
-            location_objs = [
-                obj
-                for (score, obj) in sorted(location_objs_and_score)]
+            location_objs_and_ranking_info = [
+                merge_dicts(
+                    LocationSerializer(location_obj).data,
+                    scored_locations.iloc[[i]].to_dict(orient='records')[0])
+                for i, location_obj in enumerate(location_objs)
+                ]
+            location_objs_and_ranking_info.sort(
+                key=lambda x: -x['score']
+                )
+            log.debug('Scores: %s',
+                      [(l['name'], l['score'])
+                       for l in location_objs_and_ranking_info]
+                      )
+            return_data['locations'] = location_objs_and_ranking_info
+        else:
+            serializer = LocationSerializer(location_objs, many=True)
+            return_data['locations'] = serializer.data
 
-        # serialize & return results
-        serializer = LocationSerializer(location_objs, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(return_data, status=status.HTTP_200_OK)
+
+def merge_dicts(*dict_args):
+    """
+    Given any number of dicts, shallow copy and merge into a new dict,
+    precedence goes to key value pairs in latter dicts.
+    """
+    result = {}
+    for dictionary in dict_args:
+        result.update(dictionary)
+    return result
 
 
 class LocationDetailsView(generics.RetrieveAPIView):
