@@ -12,3 +12,4 @@ dj-database-url==0.4.2
 gunicorn==19.6.0
 whitenoise==3.3.0
 pandas==0.20.1
+numpy==1.12.1
