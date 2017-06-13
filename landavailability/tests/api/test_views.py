@@ -1109,6 +1109,7 @@ FIXTURE_LOCATION_3 = {
     "srid": 4326
     }
 
+# a rectangle around the whole of Cambridge
 POLYGON_CAMBRIDGE = {
     'polygon': """[
         [
@@ -1163,7 +1164,7 @@ class TestLocationSearch(LandAvailabilityUserAPITestCase):
             url, {'postcode': 'CB11AZ', 'range_distance': 1000})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.json()), 3)
+        self.assertEqual(len(response.json()['locations']), 3)
 
     @pytest.mark.django_db
     def test_by_polygon(self):
@@ -1182,7 +1183,7 @@ class TestLocationSearch(LandAvailabilityUserAPITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.json()), 2)
+        self.assertEqual(len(response.json()['locations']), 2)
 
     @pytest.mark.django_db
     def test_no_locations_outside_selected_area(self):
@@ -1226,7 +1227,7 @@ class TestLocationSearch(LandAvailabilityUserAPITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.json()), 0)
+        self.assertEqual(len(response.json()['locations']), 0)
 
     @pytest.mark.django_db
     def test_location_view_get_locations_no_params(self):
@@ -1269,7 +1270,7 @@ class TestLocationSearch(LandAvailabilityUserAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         pprint(response.json())
         self.assertEqual(len(response.json()), 3)
-        self.assertEqual(response.json()[0]['name'], 'Test Location 3')
+        self.assertEqual(response.json()['locations'][0]['name'], 'Test Location 3')
 
     @pytest.mark.django_db
     def test_ranking_no_pupils_param(self):

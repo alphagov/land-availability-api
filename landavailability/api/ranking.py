@@ -83,7 +83,7 @@ class SchoolRankingConfig(object):
 
         df = pd.DataFrame([
             {
-                'geoattributes.AREA': l.estimated_floor_space,
+                'estimated_floor_space': l.estimated_floor_space,
                 'geoattributes.BROADBAND': 1.0 if l.nearest_broadband_fast else 0.0,
                 'geoattributes.COVERAGE BY GREENBELT': np.NaN,  # TODO
                 'geoattributes.DISTANCE TO BUS STOP': l.nearest_busstop_distance,
@@ -109,7 +109,7 @@ class SchoolRankingConfig(object):
         '''
         # work out if the site size is suitable
         df['area_suitable'] = is_area_suitable(
-            df['geoattributes.AREA'], self.lower_site_req, self.upper_site_req)
+            df['estimated_floor_space'], self.lower_site_req, self.upper_site_req)
 
 
 def is_area_suitable(area, lower_site_req, upper_site_req):
