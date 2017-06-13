@@ -691,7 +691,7 @@ class TestLocationViewGet(LandAvailabilityUserAPITestCase):
             url, {'postcode': 'CB11AZ', 'range_distance': 1000})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.json()), 3)
+        self.assertEqual(len(response.json()['locations']), 3)
 
     @pytest.mark.django_db
     def test_location_view_get_locations_selected_area(self):
@@ -787,7 +787,7 @@ class TestLocationViewGet(LandAvailabilityUserAPITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.json()), 2)
+        self.assertEqual(len(response.json()['locations']), 2)
 
     @pytest.mark.django_db
     def test_location_view_get_no_locations_outside_selected_area(self):
@@ -883,7 +883,7 @@ class TestLocationViewGet(LandAvailabilityUserAPITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.json()), 0)
+        self.assertEqual(len(response.json()['locations']), 0)
 
     @pytest.mark.django_db
     def test_location_view_get_locations_no_params(self):
@@ -1159,7 +1159,7 @@ class TestLocationSearch(LandAvailabilityUserAPITestCase):
         serializer.save()
 
         # Get the data from the API
-        url = reverse('location-search')
+        url = reverse('locations')
         response = self.client.get(
             url, {'postcode': 'CB11AZ', 'range_distance': 1000})
 
@@ -1177,7 +1177,7 @@ class TestLocationSearch(LandAvailabilityUserAPITestCase):
         serializer.save()
 
         # Get the data from the API
-        url = reverse('location-search')
+        url = reverse('locations')
         response = self.client.get(
             url, POLYGON_CAMBRIDGE,
         )
@@ -1196,7 +1196,7 @@ class TestLocationSearch(LandAvailabilityUserAPITestCase):
         serializer.save()
 
         # Get the data from the API
-        url = reverse('location-search')
+        url = reverse('locations')
         response = self.client.get(
             url, {
                 'polygon': """[
@@ -1231,13 +1231,13 @@ class TestLocationSearch(LandAvailabilityUserAPITestCase):
 
     @pytest.mark.django_db
     def test_location_view_get_locations_no_params(self):
-        url = reverse('location-search')
+        url = reverse('locations')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @pytest.mark.django_db
     def test_location_view_get_locations_invalid_postcode(self):
-        url = reverse('location-search')
+        url = reverse('locations')
         response = self.client.get(
             url, {'postcode': 'XX11YY', 'range_distance': 1000})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1262,54 +1262,54 @@ class TestLocationSearch(LandAvailabilityUserAPITestCase):
         busstop.update_close_locations(default_range=3000)
 
         # Get the data from the API
-        url = reverse('location-search')
+        url = reverse('locations')
         response = self.client.get(
             url, dict(POLYGON_CAMBRIDGE.items(),
                       build='secondary_school'))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         pprint(response.json())
-        self.assertEqual(len(response.json()), 3)
+        self.assertEqual(len(response.json()['locations']), 3)
         self.assertEqual(response.json()['locations'][0]['name'], 'Test Location 3')
 
     @pytest.mark.django_db
     def test_ranking_no_pupils_param(self):
-        url = reverse('location-search')
+        url = reverse('locations')
         response = self.client.get(url, build='secondary_school')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @pytest.mark.django_db
     def test_ranking_non_int_page_size(self):
-        url = reverse('location-search')
+        url = reverse('locations')
         response = self.client.get(url, page_size='string')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @pytest.mark.django_db
     def test_ranking_negative_page_size(self):
-        url = reverse('location-search')
+        url = reverse('locations')
         response = self.client.get(url, page_size=-5)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @pytest.mark.django_db
     def test_ranking_page_size_too_big(self):
-        url = reverse('location-search')
+        url = reverse('locations')
         response = self.client.get(url, page_size=1e6)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @pytest.mark.django_db
     def test_ranking_non_int_page(self):
-        url = reverse('location-search')
+        url = reverse('locations')
         response = self.client.get(url, page='string')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @pytest.mark.django_db
     def test_ranking_negative_page(self):
-        url = reverse('location-search')
+        url = reverse('locations')
         response = self.client.get(url, page=-5)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @pytest.mark.django_db
     def test_ranking_page_too_big(self):
-        url = reverse('location-search')
+        url = reverse('locations')
         response = self.client.get(url, page=1e6)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

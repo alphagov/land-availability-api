@@ -201,54 +201,6 @@ class LocationView(APIView):
         postcode = request.query_params.get('postcode')
         range_distance = request.query_params.get('range_distance')
         polygon = request.query_params.get('polygon')
-
-        # work out which locations are requested
-        if polygon:
-            # Build a Polygon instance using the coordinates passed
-            # as parameters in the 'polygon' field of the query string
-            json_geometry = {
-                "type": "Polygon",
-                "coordinates": json.loads(polygon)
-            }
-
-            geometry = GEOSGeometry(json.dumps(json_geometry), srid=4326)
-
-            # Get all the locations that intersect the given polygon
-            locations = Location.objects.filter(geom__intersects=geometry)
-        elif postcode and range_distance:
-            # Normalise postcode first
-            postcode = postcode.replace(' ', '').upper()
-
-            try:
-                codepoint = CodePoint.objects.get(postcode=postcode)
-            except CodePoint.DoesNotExist:
-                return Response(
-                    'The given postcode is not available in CodePoints',
-                    status=status.HTTP_400_BAD_REQUEST)
-
-            locations = Location.objects.filter(
-                geom__dwithin=(codepoint.point, D(m=range_distance))).\
-                annotate(distance=Distance('geom', codepoint.point))
-        else:
-            return Response(
-                'The parameters are missing: postcode and range_distance OR '
-                'polygon',
-                status=status.HTTP_400_BAD_REQUEST)
-
-        # no particular ordering
-
-        # return them
-        serializer = LocationSerializer(locations, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class LocationSearchView(APIView):
-    permission_classes = (IsAdminOrReadOnlyUser, )
-
-    def get(self, request, *args, **kwargs):
-        postcode = request.query_params.get('postcode')
-        range_distance = request.query_params.get('range_distance')
-        polygon = request.query_params.get('polygon')
         build = request.query_params.get('build')
         num_pupils = request.query_params.get('num_pupils', 0)
         num_pupils_post16 = request.query_params.get('num_pupils_post16', 0)
