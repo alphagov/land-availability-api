@@ -41,7 +41,4 @@ urlpatterns = [
     url(
         r'^locations/(?P<uprn>[a-zA-Z0-9]+)/$',
         views.LocationDetailsView.as_view(), name='location-details'),
-    url(
-        r'^location-search$',
-        views.LocationSearchView.as_view(), name='location-search'),
 ]
