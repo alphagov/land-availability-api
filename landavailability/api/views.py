@@ -249,7 +249,8 @@ class LocationView(APIView):
             geometry = GEOSGeometry(json.dumps(json_geometry), srid=4326)
 
             # Get all the locations that intersect the given polygon
-            locations = Location.objects.filter(geom__intersects=geometry)
+            locations = Location.objects.filter(geom__intersects=geometry).\
+                order_by('id')
         elif postcode and range_distance:
             # Normalise postcode first
             postcode = postcode.replace(' ', '').upper()
@@ -263,6 +264,7 @@ class LocationView(APIView):
 
             locations = Location.objects.filter(
                 geom__dwithin=(codepoint.point, D(m=range_distance))).\
+                order_by('id').\
                 annotate(distance=Distance('geom', codepoint.point))
         else:
             log.debug('Params missing postcode and range_distance OR '
@@ -312,7 +314,8 @@ class LocationView(APIView):
         else:
             # locations is a dataframe, because they have been ranked
             location_ids = locations_to_show.index
-        location_objs = Location.objects.filter(id__in=location_ids)
+        location_objs = Location.objects.filter(id__in=location_ids).\
+            order_by('id')
         # sort by score
         if build:
             location_objs_and_ranking_info = [
