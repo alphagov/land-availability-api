@@ -2,7 +2,7 @@ from .models import (
     BusStop, TrainStop, Address, CodePoint, Broadband, MetroTube, Greenbelt,
     Motorway, Substation, OverheadLine, School, Location)
 from rest_framework import serializers
-from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.geos import GEOSGeometry, Point, MultiPolygon
 import json
 
 
@@ -495,9 +495,18 @@ class LocationSerializer(serializers.ModelSerializer):
 
         location.ba_ref = validated_data.get('ba_ref')
         location.geom = GEOSGeometry(
-                validated_data.get('geom').geojson,
-                srid=validated_data.get('srid'))
-        location.point = location.geom.centroid
+            validated_data.get('geom').geojson,
+            srid=validated_data.get('srid'))
+        centroid = location.geom.centroid
+        # sanity check - centroid function gives a point in Africa for uprn
+        # 200004165968!
+        if centroid.distance(location.geom) < 10:
+            location.point = centroid
+        else:
+            # just set it to the first point in the polygon. if we leave it
+            # blank then the map is blank.
+            assert isinstance(location.geom, MultiPolygon)
+            location.point = Point(location.geom.coords[0][0][0])
         location.name = validated_data.get('name')
         location.authority = validated_data.get('authority')
         location.owner = validated_data.get('owner')
