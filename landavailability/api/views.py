@@ -282,7 +282,7 @@ class LocationView(APIView):
         return_data = {}
 
         # score & order them
-        if build:
+        if build and locations:
             if build not in ('secondary_school', 'primary_school'):
                 return Response('Bad parameter "build" - should be '
                                 '"secondary_school" or "primary_school"',
