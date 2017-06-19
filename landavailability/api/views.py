@@ -210,30 +210,44 @@ class LocationView(APIView):
         try:
             num_pupils = int(num_pupils)
         except ValueError:
+            log.info('num_pupils parameter must be an integer not %r',
+                     num_pupils)
             return Response('num_pupils parameter must be an integer',
                             status=status.HTTP_400_BAD_REQUEST)
         try:
             num_pupils_post16 = int(num_pupils_post16)
         except ValueError:
+            log.info('num_pupils_post16 parameter must be an integer not %r',
+                     num_pupils_post16)
             return Response('num_pupils_post16 parameter must be an integer',
                             status=status.HTTP_400_BAD_REQUEST)
         try:
             page_size = int(page_size)
         except ValueError:
+            log.info('page_size parameter must be an integer not %r',
+                     page_size)
             return Response('page_size parameter must be an integer',
                             status=status.HTTP_400_BAD_REQUEST)
         if page_size > MAX_PAGE_SIZE:
+            log.info('page_size parameter %r is above max %s',
+                     page_size, MAX_PAGE_SIZE)
             return Response('page_size maximum is {}'.format(MAX_PAGE_SIZE),
                             status=status.HTTP_400_BAD_REQUEST)
         if page_size < MIN_PAGE_SIZE:
+            log.info('page_size parameter %r is below min %s',
+                     page_size, MIN_PAGE_SIZE)
             return Response('page_size minimum is {}'.format(MIN_PAGE_SIZE),
                             status=status.HTTP_400_BAD_REQUEST)
         try:
             page = int(page)
         except ValueError:
+            log.info('page parameter must be an integer not %r',
+                     page)
             return Response('page parameter must be an integer',
                             status=status.HTTP_400_BAD_REQUEST)
         if page < 1:
+            log.info('page parameter must be 1 or above not %r',
+                     page)
             return Response('page must be 1 or above',
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -258,8 +272,9 @@ class LocationView(APIView):
             try:
                 codepoint = CodePoint.objects.get(postcode=postcode)
             except CodePoint.DoesNotExist:
+                log.info('postcode %s not found in CodePoint', postcode)
                 return Response(
-                    'The given postcode is not available in CodePoints',
+                    'The given postcode is not available in CodePoint',
                     status=status.HTTP_400_BAD_REQUEST)
 
             locations = Location.objects.filter(
@@ -267,8 +282,8 @@ class LocationView(APIView):
                 order_by('id').\
                 annotate(distance=Distance('geom', codepoint.point))
         else:
-            log.debug('Params missing postcode and range_distance OR '
-                      'polygon')
+            log.info('Params missing postcode and range_distance OR '
+                     'polygon')
             return Response(
                 'The parameters are missing: postcode and range_distance OR '
                 'polygon',
@@ -282,8 +297,10 @@ class LocationView(APIView):
         return_data = {}
 
         # score & order them
-        if build:
+        if build and locations:
             if build not in ('secondary_school', 'primary_school'):
+                log.info('build should be "secondary_school" or '
+                         '"primary_school" not %r', build)
                 return Response('Bad parameter "build" - should be '
                                 '"secondary_school" or "primary_school"',
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -303,6 +320,7 @@ class LocationView(APIView):
         # paging
         offset = page_size * (page - 1)
         if offset > len(locations):
+            log.info('Page %s is out of range', offset)
             return Response('"page" is out of range',
                             status=status.HTTP_404_NOT_FOUND)
         locations_to_show = locations[offset:offset + page_size]
