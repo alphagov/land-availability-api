@@ -33,7 +33,6 @@ class TestRanking(TestCase):
              'estimated_floor_space': 8711.72585990344,
              'geoattributes': {
                  'BROADBAND': '67',
-                 'COVERAGE BY GREENBELT': 0.0,
                  'DISTANCE TO BUS STOP': 2.06696443,
                  'DISTANCE TO METRO STATION': 1591.414955752,
                  'DISTANCE TO MOTORWAY JUNCTION': 1394.947379297,
@@ -43,6 +42,7 @@ class TestRanking(TestCase):
                  'DISTANCE TO SECONDARY SCHOOL': 824.753126148,
                  'DISTANCE TO SUBSTATION': 2981.508831039,
                  'FLOORSPACE': 8711.72585990344},
+             'greenbelt overlap': 0.0,
              'id': 3830,
              'name': 'Lower Lame Road - Land At, Lameside',
              'owner': 'Oldham',
@@ -57,7 +57,6 @@ class TestRanking(TestCase):
              'estimated_floor_space': 1321.17367321562,
              'geoattributes': {
                  'BROADBAND': '100',
-                 'COVERAGE BY GREENBELT': 0.0,
                  'DISTANCE TO BUS STOP': 175.924922778,
                  'DISTANCE TO METRO STATION': 386.560575227,
                  'DISTANCE TO MOTORWAY JUNCTION': 1206.127109438,
@@ -67,6 +66,7 @@ class TestRanking(TestCase):
                  'DISTANCE TO SECONDARY SCHOOL': 984.728804015,
                  'DISTANCE TO SUBSTATION': 1738.073428322,
                  'FLOORSPACE': 1321.17367321562},
+             'greenbelt overlap': 0.0,
              'id': 3825,
              'name': 'Alfrod St - Land North East Of, (Sorplus), Filesworth',
              'owner': 'Oldham',
@@ -89,7 +89,7 @@ class TestRanking(TestCase):
             'footage': {0: '', 1: ''},
             'estimated_floor_space': {0: 8711.7258599034394, 1: 1321.1736732156201},
             'geoattributes.BROADBAND': {0: '67', 1: '100'},
-            'geoattributes.COVERAGE BY GREENBELT': {0: 0.0, 1: 0.0},
+            'greenbelt overlap': {0: 0.0, 1: 0.0},
             'geoattributes.DISTANCE TO BUS STOP': {0: 2.0669644300000001,
                                                    1: 175.924922778},
             'geoattributes.DISTANCE TO METRO STATION': {0: 1591.414955752,
@@ -186,7 +186,7 @@ class TestRanking(TestCase):
         df = pd.DataFrame({
             'area_suitable': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.BROADBAND': {0: 0.0, 1: 0.6, 2: 1.0},
-            'geoattributes.COVERAGE BY GREENBELT': {0: 0.0, 1: 0.6, 2: 1.0},
+            'greenbelt overlap': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.DISTANCE TO BUS STOP': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.DISTANCE TO METRO STATION': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.DISTANCE TO MOTORWAY JUNCTION': {0: 0.0, 1: 0.6, 2: 1.0},
@@ -202,7 +202,7 @@ class TestRanking(TestCase):
         assert_frame_equal(df, pd.DataFrame({
             'area_suitable': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.BROADBAND': {0: 0.0, 1: 0.6, 2: 1.0},
-            'geoattributes.COVERAGE BY GREENBELT': {0: 1.0, 1: 0.4, 2: 0.0},
+            'greenbelt overlap': {0: 1.0, 1: 0.4, 2: 0.0},
             'geoattributes.DISTANCE TO BUS STOP': {0: 1.0, 1: 0.4, 2: 0.0},
             'geoattributes.DISTANCE TO METRO STATION': {0: 1.0, 1: 0.4, 2: 0.0},
             'geoattributes.DISTANCE TO MOTORWAY JUNCTION': {0: 0.0, 1: 0.6, 2: 1.0},
@@ -217,7 +217,7 @@ class TestRanking(TestCase):
         df = pd.DataFrame({
             'area_suitable': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.BROADBAND': {0: 0.0, 1: 0.6, 2: 1.0},
-            'geoattributes.COVERAGE BY GREENBELT': {0: 0.0, 1: 0.6, 2: 1.0},
+            'greenbelt overlap': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.DISTANCE TO BUS STOP': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.DISTANCE TO METRO STATION': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.DISTANCE TO MOTORWAY JUNCTION': {0: 0.0, 1: 0.6, 2: 1.0},
@@ -233,7 +233,7 @@ class TestRanking(TestCase):
         assert_frame_equal(df, pd.DataFrame({
             'area_suitable': {0: 0.0, 1: 0.6, 2: 1.0},
             'geoattributes.BROADBAND': {0: 0.0, 1: 0.6, 2: 1.0},
-            'geoattributes.COVERAGE BY GREENBELT': {0: 1.0, 1: 0.4, 2: 0.0},
+            'greenbelt overlap': {0: 1.0, 1: 0.4, 2: 0.0},
             'geoattributes.DISTANCE TO BUS STOP': {0: 1.0, 1: 0.4, 2: 0.0},
             'geoattributes.DISTANCE TO METRO STATION': {0: 1.0, 1: 0.4, 2: 0.0},
             'geoattributes.DISTANCE TO MOTORWAY JUNCTION': {0: 0.0, 1: 0.6, 2: 1.0},

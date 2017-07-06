@@ -51,7 +51,7 @@ class SchoolRankingConfig(object):
         self.ideal_values = dict([
             ('area_suitable', 1),
             ('geoattributes.BROADBAND', 1),
-            ('geoattributes.COVERAGE BY GREENBELT', 0),
+            ('greenbelt overlap', 0),
             ('geoattributes.DISTANCE TO BUS STOP', 0),
             ('geoattributes.DISTANCE TO METRO STATION', 0),
             ('geoattributes.DISTANCE TO MOTORWAY JUNCTION', 1),
@@ -85,7 +85,7 @@ class SchoolRankingConfig(object):
             {
                 'estimated_floor_space': l.estimated_floor_space,
                 'geoattributes.BROADBAND': 1.0 if l.nearest_broadband_fast else 0.0,
-                'geoattributes.COVERAGE BY GREENBELT': np.NaN,  # TODO
+                'greenbelt overlap': l.greenbelt_overlap,
                 'geoattributes.DISTANCE TO BUS STOP': l.nearest_busstop_distance,
                 'geoattributes.DISTANCE TO METRO STATION': l.nearest_metrotube_distance,
                 'geoattributes.DISTANCE TO MOTORWAY JUNCTION': l.nearest_motorway_distance,

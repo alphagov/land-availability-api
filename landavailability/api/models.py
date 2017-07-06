@@ -1,7 +1,7 @@
 from django.contrib.gis.db import models
-from django.contrib.gis.db.models.functions import Distance, Area
+from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
-from django.db.models.signals import pre_delete
+from django.db.models.signals import pre_delete, post_delete, post_save
 from django.dispatch import receiver
 
 
@@ -279,31 +279,28 @@ class Greenbelt(models.Model):
     perimeter = models.DecimalField(max_digits=9, decimal_places=2, null=True)
     geom = models.MultiPolygonField(geography=True, spatial_index=True)
 
-    def update_close_locations(self, default_range=1000):
-        locations = Location.objects.filter(
-            geom__dwithin=(self.geom, D(m=default_range))).\
-            annotate(distance=Distance('geom', self.geom))
+@receiver(post_save, sender=Greenbelt, weak=False)
+def greenbelt_update_overlapping_locations(sender, instance, **kwargs):
+    locations = Location.objects.filter(
+        geom__intersects=(instance.geom))
 
-        for location in locations:
-            if location.nearest_greenbelt:
-                if location.distance.m > location.nearest_greenbelt_distance:
-                    continue
-
-            location.nearest_greenbelt = self
-            location.nearest_greenbelt_distance = location.distance.m
-            location.save()
+    for location in locations:
+        location.update_overlapping_greenbelt()
+        location.save()
 
 
-@receiver(pre_delete, sender=Greenbelt, weak=False)
-def greenbelt_predelete_handler(sender, instance, **kwargs):
+@receiver(post_delete, sender=Greenbelt, weak=False)
+def greenbelt_postdelete_handler(sender, instance, **kwargs):
     """
-    Whenever we try to delete a Greenbelt, we search all the Locations
-    using it and we remove the reference, so the object can be safely deleted.
+    Whenever we try to delete a Greenbelt, we check all the Locations
+    overlapping it and we update their properties.
     """
-    Location.objects.filter(nearest_greenbelt__id=instance.id).\
-        update(
-            nearest_greenbelt=None,
-            nearest_greenbelt_distance=0)
+    locations = Location.objects.filter(
+        geom__intersects=instance.geom)
+
+    for location in locations:
+        location.update_overlapping_greenbelt()
+        location.save()
 
 
 class School(models.Model):
@@ -435,9 +432,7 @@ class Location(models.Model):
         Broadband, on_delete=models.SET_NULL, null=True)
     nearest_broadband_distance = models.FloatField(null=True)  # meters
     nearest_broadband_fast = models.NullBooleanField()
-    nearest_greenbelt = models.ForeignKey(
-        Greenbelt, on_delete=models.SET_NULL, null=True)
-    nearest_greenbelt_distance = models.FloatField(null=True)  # meters
+    greenbelt_overlap = models.NullBooleanField(null=True)
     nearest_primary_school = models.ForeignKey(
         School, on_delete=models.SET_NULL, null=True,
         related_name='primary_school_locations')
@@ -506,14 +501,21 @@ class Location(models.Model):
             if broadbands[0].speed_30_mb_percentage > 0:
                 self.nearest_broadband_fast = True
 
-    def update_nearest_greenbelt(self, distance=500):
-        greenbelts = Greenbelt.objects.filter(
-            geom__dwithin=(self.geom, D(m=distance))).annotate(
-            distance=Distance('geom', self.geom)).order_by('distance')
-
-        if len(greenbelts) > 0:
-            self.nearest_greenbelt = greenbelts[0]
-            self.nearest_greenbelt_distance = greenbelts[0].distance.m
+    def update_overlapping_greenbelt(self):
+        intersects = Greenbelt.objects \
+            .filter(geom__intersects=(self.geom)) \
+            .all()[:1]
+        self.greenbelt_overlap = bool(intersects)
+        # Ideally we'd calculate the proportion that intersects, but
+        # that is hard. This is how far I got, but the geography needs
+        # converting to 2D somehow:
+        #     .annotate(geom_=Cast('geom', models.MultiPolygonField())) \
+        # intersection_area = Greenbelt.objects \
+        #     .filter(geom__intersects=(self.geom)) \
+        #     .annotate(geom_=Cast('geom', models.MultiPolygonField())) \
+        #     .aggregate(area=models.Union('geom_'))['area']
+        # proportion_overlap_with_greenbelt = intersection_area / self.geom.area
+        # self.greenbelt_overlap = proportion_overlap_with_greenbelt
 
     def update_nearest_primary_school(self, distance=1000):
         schools = School.objects.filter(
@@ -552,7 +554,7 @@ class Location(models.Model):
             self.update_nearest_overheadline()
             self.update_nearest_motorway()
             self.update_nearest_broadband()
-            self.update_nearest_greenbelt()
+            self.update_overlapping_greenbelt()
             self.update_nearest_primary_school()
             self.update_nearest_secondary_school()
             self.update_nearest_metrotube()

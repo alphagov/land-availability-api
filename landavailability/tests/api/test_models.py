@@ -858,7 +858,99 @@ class TestLocationModel(TestCase):
         self.assertEqual(saved_location.nearest_broadband_fast, True)
 
     @pytest.mark.django_db
-    def test_greenbelt_pre_delete_signal(self):
+    def test_update_overlapping_greenbelt_on_new_location(self):
+        # polygons:
+        # http://bl.ocks.org/d/8cf01fcf69dbd6913ede27a0e0d9e297
+        greenbelt = Greenbelt()
+        greenbelt.code = 'cambridge-gb1'
+        greenbelt_geometry = """
+        {
+            "type": "MultiPolygon",
+            "coordinates": [
+              [[
+                [ 0.112, 52.176, 0 ],
+                [ 0.141, 52.176, 0 ],
+                [ 0.141, 52.192, 0 ],
+                [ 0.112, 52.192, 0 ],
+                [ 0.112, 52.176, 0 ]
+              ]]
+            ]
+        }
+        """
+        greenbelt.geom = GEOSGeometry(greenbelt_geometry, srid=4326)
+        greenbelt.save()
+
+        location = Location()
+        location.name = 'Location overlapping Cambridge greenbelt'
+        location_geometry = """
+            {
+              "type": "MultiPolygon",
+              "coordinates": [
+                [[
+                  [ 0.125, 52.189 ],
+                  [ 0.139, 52.189 ],
+                  [ 0.139, 52.195 ],
+                  [ 0.125, 52.195 ],
+                  [ 0.125, 52.189 ]
+                ]]
+              ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        saved_location = Location.objects.first()
+
+        self.assertTrue(saved_location.greenbelt_overlap)
+
+    @pytest.mark.django_db
+    def test_update_non_overlapping_greenbelt_on_new_location(self):
+        greenbelt = Greenbelt()
+        greenbelt.code = 'cambridge-gb1'
+        greenbelt_geometry = """
+        {
+            "type": "MultiPolygon",
+            "coordinates": [
+              [[
+                [ 0.112, 52.176, 0 ],
+                [ 0.141, 52.176, 0 ],
+                [ 0.141, 52.192, 0 ],
+                [ 0.112, 52.192, 0 ],
+                [ 0.112, 52.176, 0 ]
+              ]]
+            ]
+        }
+        """
+        greenbelt.geom = GEOSGeometry(greenbelt_geometry, srid=4326)
+        greenbelt.save()
+
+        location = Location()
+        location.name = 'Location NOT overlapping Cambridge greenbelt'
+        location_geometry = """
+            {
+              "type": "MultiPolygon",
+              "coordinates": [
+                [[
+                  [ -0.125, 52.189 ],
+                  [ -0.139, 52.189 ],
+                  [ -0.139, 52.195 ],
+                  [ -0.125, 52.195 ],
+                  [ -0.125, 52.189 ]
+                ]]
+              ]
+            }
+        """
+        location.geom = GEOSGeometry(location_geometry, srid=4326)
+        location.point = location.geom.centroid
+        location.save()
+
+        saved_location = Location.objects.first()
+
+        self.assertFalse(saved_location.greenbelt_overlap)
+
+    @pytest.mark.django_db
+    def test_greenbelt_post_delete_signal(self):
         greenbelt = Greenbelt()
         greenbelt.code = 'Local_Authority_green_belt_boundaries_2014-15.25'
         greenbelt_geometry = """
@@ -954,19 +1046,11 @@ class TestLocationModel(TestCase):
                     [
                         [
                             [
-                                [-2.2611006839832566, 53.38038878620092],
-                                [-2.2610825125994793, 53.38038614557534],
-                                [-2.2610863627594426, 53.38037660921687],
-                                [-2.2610952486264946, 53.38035474743402],
-                                [-2.2611566375286523, 53.380363691529595],
-                                [-2.261181463464652, 53.38036723261247],
-                                [-2.2612925054090502, 53.3803834385581],
-                                [-2.2612817028396486, 53.38041141681172],
-                                [-2.261280221050265, 53.380414925617124],
-                                [-2.2611690287016595, 53.38039871998939],
-                                [-2.2611458243233487, 53.38039534703601],
-                                [-2.261144051871036, 53.3803950893482],
-                                [-2.2611006839832566, 53.38038878620092]
+                                [ -2.161962389945984, 53.07167334109752 ],
+                                [ -2.161755859851837, 53.07167334109752 ],
+                                [ -2.161755859851837, 53.071855441656595 ],
+                                [ -2.161962389945984, 53.071855441656595 ],
+                                [ -2.161962389945984, 53.07167334109752 ]
                             ]
                         ]
                     ]
@@ -974,16 +1058,14 @@ class TestLocationModel(TestCase):
         """
         location.geom = GEOSGeometry(location_geometry, srid=4326)
         location.point = location.geom.centroid
-        location.nearest_greenbelt = greenbelt
         location.save()
 
-        self.assertIsNotNone(location.nearest_greenbelt)
+        self.assertTrue(location.greenbelt_overlap)
 
         greenbelt.delete()
 
         changed_location = Location.objects.first()
-        self.assertIsNone(changed_location.nearest_greenbelt)
-        self.assertEqual(changed_location.nearest_greenbelt_distance, 0)
+        self.assertFalse(changed_location.greenbelt_overlap)
 
     @pytest.mark.django_db
     def test_primary_school_pre_delete_signal(self):
@@ -1683,6 +1765,7 @@ class TestGreenbeltModel(TestCase):
     def test_update_location_no_greenbelt(self):
         greenbelt = Greenbelt()
         greenbelt.code = 'Local_Authority_green_belt_boundaries_2014-15.25'
+        # a bit of stoke
         greenbelt_geometry = """
             {
                 "type": "MultiPolygon",
@@ -1768,43 +1851,44 @@ class TestGreenbeltModel(TestCase):
         greenbelt.save()
 
         location = Location()
-        location.name = 'Test Location'
+        location.name = 'Test Location near Manchester'
         location_geometry = """
             {
                 "type": "MultiPolygon",
-                "coordinates":
+                        "coordinates": [
+                [
+                  [
                     [
-                        [
-                            [
-                                [-2.2611006839832566, 53.38038878620092],
-                                [-2.2610825125994793, 53.38038614557534],
-                                [-2.2610863627594426, 53.38037660921687],
-                                [-2.2610952486264946, 53.38035474743402],
-                                [-2.2611566375286523, 53.380363691529595],
-                                [-2.261181463464652, 53.38036723261247],
-                                [-2.2612925054090502, 53.3803834385581],
-                                [-2.2612817028396486, 53.38041141681172],
-                                [-2.261280221050265, 53.380414925617124],
-                                [-2.2611690287016595, 53.38039871998939],
-                                [-2.2611458243233487, 53.38039534703601],
-                                [-2.261144051871036, 53.3803950893482],
-                                [-2.2611006839832566, 53.38038878620092]
-                            ]
-                        ]
+                      -2.1624183654785156,
+                      53.07101100425172
+                    ],
+                    [
+                      -2.1611630916595455,
+                      53.07101100425172
+                    ],
+                    [
+                      -2.1611630916595455,
+                      53.07133975666017
+                    ],
+                    [
+                      -2.1624183654785156,
+                      53.07133975666017
+                    ],
+                    [
+                      -2.1624183654785156,
+                      53.07101100425172
                     ]
+                  ]
+                ]
+              ]
             }
         """
         location.geom = GEOSGeometry(location_geometry, srid=4326)
         location.point = location.geom.centroid
         location.save()
 
-        greenbelt.update_close_locations(default_range=35000)
-
         updated_location = Location.objects.first()
-        self.assertEqual(
-            updated_location.nearest_greenbelt.code,
-            'Local_Authority_green_belt_boundaries_2014-15.25')
-        self.assertIsNotNone(updated_location.nearest_greenbelt_distance)
+        self.assertTrue(updated_location.greenbelt_overlap)
 
 
 class TestSchoolModel(TestCase):
