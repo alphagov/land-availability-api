@@ -117,8 +117,7 @@ class GreenbeltCreateView(APIView):
         serializer = GreenbeltSerializer(data=request.data)
 
         if serializer.is_valid():
-            greenbelt = serializer.save()
-            greenbelt.update_close_locations()
+            serializer.save()
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 

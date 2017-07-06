@@ -439,8 +439,8 @@ class SchoolSerializer(serializers.ModelSerializer):
         school.school_pupils = validated_data.get('school_capacity')
         school.postcode = validated_data.get('postcode')
         school.point = GEOSGeometry(
-                validated_data.get('point').geojson,
-                srid=validated_data.get('srid'))
+            validated_data.get('point').geojson,
+            srid=validated_data.get('srid'))
 
         school.save()
         return school
@@ -463,7 +463,7 @@ class LocationSerializer(serializers.ModelSerializer):
             'nearest_ohl_distance', 'nearest_motorway_id',
             'nearest_motorway_distance', 'nearest_broadband_id',
             'nearest_broadband_distance', 'nearest_broadband_fast',
-            'nearest_greenbelt_id', 'nearest_greenbelt_distance',
+            'greenbelt_overlap',
             'nearest_primary_school_id', 'nearest_primary_school_distance',
             'nearest_secondary_school_id',
             'nearest_secondary_school_distance', 'nearest_metrotube_id',
